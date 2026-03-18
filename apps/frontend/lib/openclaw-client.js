@@ -99,7 +99,7 @@ function getConnection() {
               minProtocol: 3,
               maxProtocol: 3,
               client: {
-                id: 'openclaw-frontend',
+                id: 'gateway-client',
                 version: '1.0.0',
                 platform: 'linux',
                 mode: 'backend',
