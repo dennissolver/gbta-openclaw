@@ -100,8 +100,9 @@ function getConnection() {
           const nonce = msg.payload.nonce;
           const signedAt = Date.now();
 
-          // Sign the challenge: v2 payload = deviceId:clientId:role:scopes:token:nonce
-          const signPayload = `${DEVICE_ID}:gateway-client:operator:operator.read,operator.write,operator.admin:${GATEWAY_TOKEN}:${nonce}`;
+          // Sign the challenge: v2 payload = v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce
+          const scopes = 'operator.read,operator.write,operator.admin';
+          const signPayload = `v2|${DEVICE_ID}|gateway-client|backend|operator|${scopes}|${signedAt}|${GATEWAY_TOKEN}|${nonce}`;
           const privateKeyObj = crypto.createPrivateKey({
             key: Buffer.concat([
               // Ed25519 PKCS8 prefix (16 bytes) + 32-byte raw key
