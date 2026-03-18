@@ -8,7 +8,7 @@ const TEMPLATES = [
       {
         title: 'First-Time Setup',
         desc: 'Connect your first messaging platform and send your first command',
-        prompt: 'Help me set up OpenClaw. I want to connect my WhatsApp account and configure basic preferences like my timezone (AEST), name, and notification settings.',
+        prompt: 'Help me set up EasyOpenClaw. I want to connect my WhatsApp account and configure basic preferences like my timezone (AEST), name, and notification settings.',
         difficulty: 'Beginner',
         time: '5 min',
       },

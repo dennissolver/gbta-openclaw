@@ -1,5 +1,5 @@
 {
-  "name": "gbta-openclaw-frontend",
+  "name": "easyopenclaw-frontend",
   "private": true,
   "scripts": {
     "dev": "next dev",

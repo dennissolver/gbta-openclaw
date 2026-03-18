@@ -34,11 +34,11 @@ export default function Layout({ children }) {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white font-bold text-sm group-hover:bg-brand-400 transition-colors">
-                OC
+                EO
               </div>
               <div>
-                <span className="text-white font-semibold text-lg">OpenClaw</span>
-                <span className="text-dark-400 text-xs ml-2 hidden sm:inline">by GBTA</span>
+                <span className="text-white font-semibold text-lg">EasyOpenClaw</span>
+                <span className="text-dark-400 text-xs ml-2 hidden sm:inline">by Corporate AI Solutions</span>
               </div>
             </Link>
 
@@ -101,14 +101,17 @@ export default function Layout({ children }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-dark-400">
             <div>
-              OpenClaw by <span className="text-white">Global Buildtech Australia</span>
+              EasyOpenClaw by <span className="text-white">Corporate AI Solutions</span>
             </div>
             <div className="flex gap-6">
-              <a href="https://openclaw.ai" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                OpenClaw Project
+              <Link href="/references" className="hover:text-white transition-colors">
+                References
+              </Link>
+              <a href="https://www.corporateaisolutions.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                Corporate AI Solutions
               </a>
               <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                GitHub
+                OpenClaw Project
               </a>
             </div>
           </div>

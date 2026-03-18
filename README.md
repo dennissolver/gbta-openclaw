@@ -1,11 +1,14 @@
-# gbta-openclaw
+# EasyOpenClaw
 
-OpenClaw MVP — Next.js on Vercel + Supabase. No separate backend.
+EasyOpenClaw is a wrapper around [OpenClaw](https://github.com/openclaw/openclaw), the open-source autonomous AI agent. Built by [Corporate AI Solutions](https://www.corporateaisolutions.com).
+
+> **Note:** This is an independent wrapper product. It is not affiliated with, endorsed by, or sponsored by the OpenClaw project or its maintainers.
 
 ## Architecture
 
 ```
-Browser → Next.js (Vercel) → API Routes (/api/*) → Supabase (PostgreSQL)
+Browser -> Next.js (Vercel) -> API Routes (/api/*) -> Supabase (PostgreSQL)
+                                                   -> OpenClaw Gateway (DigitalOcean VPS)
 ```
 
 ## Quick Start
@@ -47,3 +50,12 @@ apps/frontend/
 infrastructure/    Database schema and migrations
 docs/              Architecture docs
 ```
+
+## Licensing
+
+EasyOpenClaw is a wrapper around OpenClaw, which is licensed under the MIT License. See [LICENSES-GENERATED.md](./LICENSES-GENERATED.md) for a full list of dependency licenses.
+
+## Attribution
+
+- **OpenClaw** — [https://github.com/openclaw/openclaw](https://github.com/openclaw/openclaw) (MIT License)
+- **EasyOpenClaw wrapper** — by [Corporate AI Solutions](https://www.corporateaisolutions.com)

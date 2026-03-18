@@ -59,11 +59,11 @@ export default function Home() {
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               Your Autonomous AI Agent,{' '}
-              <span className="text-brand-400">Customized by GBTA</span>
+              <span className="text-brand-400">Made Easy</span>
             </h1>
             <p className="text-lg sm:text-xl text-dark-300 max-w-2xl mx-auto mb-10 leading-relaxed">
               A self-hosted AI agent that connects to your messaging apps, executes real tasks,
-              and remembers everything — configured and managed by Global Buildtech Australia
+              and remembers everything — wrapped and managed by Corporate AI Solutions
               for Australian businesses.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -81,12 +81,13 @@ export default function Home() {
       {/* What is OpenClaw */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="card max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-4">What is OpenClaw?</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">What is EasyOpenClaw?</h2>
           <div className="space-y-4 text-dark-300 leading-relaxed">
             <p>
-              <strong className="text-white">OpenClaw</strong> is the world's most popular open-source autonomous AI agent —
-              a self-hosted personal AI assistant that runs on your own machine. Unlike traditional chatbots,
-              OpenClaw doesn't just answer questions — it <strong className="text-brand-400">takes action</strong>.
+              <strong className="text-white">EasyOpenClaw</strong> is a wrapper around{' '}
+              <strong className="text-white">OpenClaw</strong>, the world's most popular open-source autonomous AI agent.
+              Unlike traditional chatbots, OpenClaw doesn't just answer questions — it{' '}
+              <strong className="text-brand-400">takes action</strong>.
             </p>
             <p>
               It connects through the chat apps you already use (WhatsApp, Slack, Telegram, Teams, and more),
@@ -94,7 +95,7 @@ export default function Home() {
               maintains persistent memory across all your conversations.
             </p>
             <p>
-              <strong className="text-white">GBTA's customized deployment</strong> gives you a pre-configured,
+              <strong className="text-white">EasyOpenClaw by Corporate AI Solutions</strong> gives you a pre-configured,
               production-ready OpenClaw instance tailored for Australian business needs — with curated skills,
               optimized LLM routing, and enterprise-grade security.
             </p>
@@ -106,7 +107,7 @@ export default function Home() {
       <section className="border-y border-dark-800 bg-dark-900/50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Why GBTA Customized OpenClaw</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Why We Built EasyOpenClaw</h2>
             <p className="text-dark-300 text-lg">
               We saw Australian businesses struggling with fragmented AI tools that couldn't take real action.
               OpenClaw solves this — and we've made it turnkey.
@@ -116,7 +117,7 @@ export default function Home() {
             <div className="card text-center">
               <div className="text-3xl mb-3">🇦🇺</div>
               <h3 className="text-white font-semibold mb-2">AU-Optimized</h3>
-              <p className="text-dark-400 text-sm">Pre-configured for Australian time zones, compliance, and business workflows</p>
+              <p className="text-dark-400 text-sm">Pre-configured by Corporate AI Solutions for Australian time zones, compliance, and business workflows</p>
             </div>
             <div className="card text-center">
               <div className="text-3xl mb-3">⚡</div>
@@ -126,7 +127,7 @@ export default function Home() {
             <div className="card text-center">
               <div className="text-3xl mb-3">🛡️</div>
               <h3 className="text-white font-semibold mb-2">Enterprise Ready</h3>
-              <p className="text-dark-400 text-sm">Managed deployment with support, monitoring, and security built in from day one</p>
+              <p className="text-dark-400 text-sm">Managed by Corporate AI Solutions with support, monitoring, and security built in from day one</p>
             </div>
           </div>
         </div>
@@ -242,7 +243,7 @@ export default function Home() {
         <div className="card text-center bg-gradient-to-br from-dark-900 to-dark-800 border-brand-500/20">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
           <p className="text-dark-300 text-lg mb-8 max-w-xl mx-auto">
-            Launch your GBTA-configured OpenClaw agent in minutes. Pre-loaded with curated skills and templates.
+            Launch your EasyOpenClaw agent in minutes. Pre-loaded with curated skills and templates.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href={launchHref} className="btn-primary text-lg px-10 py-3">

@@ -179,8 +179,8 @@ export default function Features() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-white mb-4">Full Feature Set</h1>
         <p className="text-dark-300 text-lg max-w-2xl mx-auto">
-          Everything OpenClaw can do — from messaging to automation to memory.
-          All included in your GBTA deployment.
+          Everything EasyOpenClaw can do — from messaging to automation to memory.
+          Powered by OpenClaw.
         </p>
       </div>
 

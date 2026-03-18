@@ -15,7 +15,7 @@ export default function Workspace() {
   // Chat state
   const [msg, setMsg] = useState('');
   const [logs, setLogs] = useState([
-    { role: 'system', text: 'Welcome to your OpenClaw agent. Type a command or paste a template to get started.' },
+    { role: 'system', text: 'Welcome to your EasyOpenClaw agent. Type a command or paste a template to get started.' },
   ]);
   const [loading, setLoading] = useState(false);
   const [streamingText, setStreamingText] = useState('');
@@ -356,7 +356,7 @@ export default function Workspace() {
             </button>
             <div>
               <h1 className="text-xl font-bold text-white">Agent Workspace</h1>
-              <p className="text-dark-400 text-sm">Your OpenClaw agent session</p>
+              <p className="text-dark-400 text-sm">Your EasyOpenClaw agent session</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

@@ -12,7 +12,7 @@ const TIERS = [
     price: 0,
     period: 'month',
     description:
-      'Get started with AI-powered automation. Perfect for exploring what OpenClaw can do.',
+      'Get started with AI-powered automation. Perfect for exploring what EasyOpenClaw can do.',
     cta: 'Get Started',
     ctaHref: '/onboarding',
     features: [
@@ -99,7 +99,7 @@ const FAQS = [
   },
   {
     q: 'Do I need to install anything?',
-    a: 'No. OpenClaw runs in the cloud. You access everything through your browser.',
+    a: 'No. EasyOpenClaw runs in the cloud. You access everything through your browser.',
   },
 ];
 
@@ -236,7 +236,7 @@ export default function Pricing() {
             <svg className="w-5 h-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Powered by OpenClaw</span>
+            <span>EasyOpenClaw &mdash; Powered by OpenClaw</span>
           </div>
         </div>
       </section>
@@ -247,7 +247,7 @@ export default function Pricing() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Frequently Asked Questions</h2>
             <p className="text-dark-300 text-lg">
-              Everything you need to know about OpenClaw pricing.
+              Everything you need to know about EasyOpenClaw pricing.
             </p>
           </div>
           <div className="space-y-3">

@@ -249,9 +249,9 @@ export default function Onboarding() {
         {currentStep === 'auth' && (
           <div className="card">
             <div className="text-center mb-8">
-              <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto mb-4">OC</div>
-              <h1 className="text-2xl font-bold text-white mb-2">Welcome to OpenClaw</h1>
-              <p className="text-dark-400">Your autonomous AI agent, configured by GBTA</p>
+              <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto mb-4">EO</div>
+              <h1 className="text-2xl font-bold text-white mb-2">Welcome to EasyOpenClaw</h1>
+              <p className="text-dark-400">Your autonomous AI agent, wrapped by Corporate AI Solutions</p>
             </div>
 
             <div className="flex gap-2 mb-6">
@@ -334,7 +334,7 @@ export default function Onboarding() {
 
             <div className="bg-dark-800 border border-dark-700 rounded-lg p-5 mb-6 space-y-4 text-sm text-dark-300 leading-relaxed">
               <p>
-                <strong className="text-white">OpenClaw is an autonomous AI agent</strong> that can take real-world actions on your behalf, including:
+                <strong className="text-white">EasyOpenClaw is an autonomous AI agent wrapper</strong> (powered by OpenClaw) that can take real-world actions on your behalf, including:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Sending messages through your connected platforms</li>
@@ -348,8 +348,8 @@ export default function Onboarding() {
                 all actions are logged, and you can revoke permissions at any time.
               </p>
               <p>
-                <strong className="text-white">Your data stays on GBTA infrastructure.</strong> No data is shared with third parties
-                except the AI providers you select. GBTA manages infrastructure security and compliance.
+                <strong className="text-white">Your data stays on Corporate AI Solutions infrastructure.</strong> No data is shared with third parties
+                except the AI providers you select. Corporate AI Solutions manages infrastructure security and compliance.
               </p>
             </div>
 
@@ -361,7 +361,7 @@ export default function Onboarding() {
                 onChange={() => {}}
               />
               <span className="text-sm text-dark-300 group-hover:text-white transition-colors">
-                I understand that OpenClaw can take actions on my behalf through connected platforms,
+                I understand that EasyOpenClaw can take actions on my behalf through connected platforms,
                 and I accept responsibility for configuring appropriate permissions and reviewing agent actions.
               </span>
             </label>
@@ -506,7 +506,7 @@ export default function Onboarding() {
                 <div className="text-5xl mb-4">&#10003;</div>
                 <h1 className="text-2xl font-bold text-white mb-2">Agent Ready!</h1>
                 <p className="text-dark-400">
-                  Your personal OpenClaw agent has been provisioned. Redirecting to workspace...
+                  Your personal EasyOpenClaw agent has been provisioned. Redirecting to workspace...
                 </p>
               </>
             )}
