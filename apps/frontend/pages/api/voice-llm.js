@@ -1,13 +1,11 @@
 /**
  * POST /api/voice-llm — OpenAI-compatible endpoint for ElevenLabs custom LLM
  *
- * ElevenLabs sends the conversation as OpenAI-format messages.
- * We forward to OpenClaw's /v1/chat/completions and return the response.
- * This bridges ElevenLabs voice I/O with OpenClaw AI processing.
+ * ElevenLabs sends stream:true and expects SSE streaming back.
+ * We call OpenClaw (non-streaming), then emit the response as SSE chunks.
  *
- * ElevenLabs expects standard OpenAI Chat Completions format:
- * Request: { model, messages: [{role, content}], stream? }
- * Response: { choices: [{message: {role, content}}] }
+ * Request: { messages, model, stream, tools?, elevenlabs_extra_body? }
+ * Response: SSE stream of chat.completion.chunk events
  */
 
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL;
@@ -23,88 +21,116 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { messages, stream } = req.body || {};
   const httpUrl = gatewayHttpUrl();
-  if (!httpUrl) {
-    // Mock mode
-    return res.json({
-      id: `chatcmpl_mock_${Date.now()}`,
-      object: 'chat.completion',
-      created: Math.floor(Date.now() / 1000),
-      model: 'easyopenclaw',
-      choices: [{
-        index: 0,
-        message: { role: 'assistant', content: 'EasyOpenClaw gateway is not configured. This is a mock response.' },
-        finish_reason: 'stop',
-      }],
-      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-    });
-  }
 
-  const { messages, model, stream } = req.body || {};
-
-  // Add system context if not already present
+  // Add system prompt for voice context
   const enhancedMessages = [...(messages || [])];
   const hasSystem = enhancedMessages.some(m => m.role === 'system');
   if (!hasSystem) {
     enhancedMessages.unshift({
       role: 'system',
-      content: 'You are the EasyOpenClaw AI agent, powered by OpenClaw. Be concise in voice responses — keep answers to 2-3 sentences max since this is a voice conversation. Be helpful, professional, and proactive.',
+      content: 'You are the EasyOpenClaw AI agent, powered by OpenClaw. Keep voice responses to 2-3 sentences since this is spoken aloud. Be helpful, professional, and concise. Use Australian English.',
     });
   }
 
+  // Get response from OpenClaw
+  let content = '';
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    if (!httpUrl) {
+      content = 'EasyOpenClaw gateway is not configured. This is a mock response.';
+    } else {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
-    const gatewayResp = await fetch(`${httpUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GATEWAY_TOKEN}`,
-      },
-      body: JSON.stringify({
-        model: 'openclaw:main',
-        messages: enhancedMessages,
-        stream: false,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!gatewayResp.ok) {
-      const errText = await gatewayResp.text();
-      console.error('[voice-llm] Gateway error:', gatewayResp.status, errText);
-      return res.status(502).json({
-        id: `chatcmpl_err_${Date.now()}`,
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model: 'easyopenclaw',
-        choices: [{
-          index: 0,
-          message: { role: 'assistant', content: 'I had trouble processing that. Could you try again?' },
-          finish_reason: 'stop',
-        }],
+      const gatewayResp = await fetch(`${httpUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+        },
+        body: JSON.stringify({
+          model: 'openclaw:main',
+          messages: enhancedMessages,
+          stream: false,
+        }),
+        signal: controller.signal,
       });
-    }
 
-    const data = await gatewayResp.json();
-    // Pass through the OpenAI-format response directly
-    return res.json(data);
+      clearTimeout(timeout);
+
+      if (gatewayResp.ok) {
+        const data = await gatewayResp.json();
+        content = data.choices?.[0]?.message?.content || 'I had trouble processing that.';
+      } else {
+        console.error('[voice-llm] Gateway error:', gatewayResp.status);
+        content = 'I had trouble processing that. Could you try again?';
+      }
+    }
   } catch (err) {
     console.error('[voice-llm] Error:', err.message);
-    return res.status(500).json({
-      id: `chatcmpl_err_${Date.now()}`,
-      object: 'chat.completion',
-      created: Math.floor(Date.now() / 1000),
+    content = 'Sorry, I encountered an error. Please try again.';
+  }
+
+  // If ElevenLabs wants streaming (they always do), return SSE
+  if (stream) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    const id = `chatcmpl_${Date.now()}`;
+    const created = Math.floor(Date.now() / 1000);
+
+    // Split content into small chunks for natural speech pacing
+    const words = content.split(' ');
+    const chunkSize = 3;
+    for (let i = 0; i < words.length; i += chunkSize) {
+      const chunk = words.slice(i, i + chunkSize).join(' ') + (i + chunkSize < words.length ? ' ' : '');
+      res.write(`data: ${JSON.stringify({
+        id,
+        object: 'chat.completion.chunk',
+        created,
+        model: 'easyopenclaw',
+        choices: [{
+          delta: { content: chunk },
+          index: 0,
+          finish_reason: null,
+        }],
+      })}\n\n`);
+    }
+
+    // Final chunk with finish_reason
+    res.write(`data: ${JSON.stringify({
+      id,
+      object: 'chat.completion.chunk',
+      created,
       model: 'easyopenclaw',
       choices: [{
+        delta: {},
         index: 0,
-        message: { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
         finish_reason: 'stop',
       }],
-    });
+    })}\n\n`);
+
+    res.write('data: [DONE]\n\n');
+    return res.end();
   }
+
+  // Non-streaming fallback
+  return res.json({
+    id: `chatcmpl_${Date.now()}`,
+    object: 'chat.completion',
+    created: Math.floor(Date.now() / 1000),
+    model: 'easyopenclaw',
+    choices: [{
+      index: 0,
+      message: { role: 'assistant', content },
+      finish_reason: 'stop',
+    }],
+    usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+  });
 }
 
 export const config = {
