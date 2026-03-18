@@ -143,6 +143,9 @@ function getConnection() {
           return;
         }
 
+        // Log all events for debugging
+        console.log('[openclaw] Event:', msg.event, msg.payload?.state || '', msg.payload?.sessionKey ? '(session)' : '');
+
         // Dispatch to event listeners
         const listeners = _eventListeners.get(msg.event);
         if (listeners) {
@@ -186,6 +189,7 @@ function getConnection() {
         }
 
         // Normal request-response
+        console.log('[openclaw] Response:', msg.id, msg.ok ? 'OK' : 'FAIL', msg.error?.message || '');
         const pending = _pendingRequests.get(msg.id);
         if (pending) {
           clearTimeout(pending.timer);
