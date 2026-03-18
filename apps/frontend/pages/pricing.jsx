@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import PricingCard from '../components/PricingCard';
+import { PubGuardCard } from '../components/PubGuardBadge';
 
 /* ------------------------------------------------------------------ */
 /*  Tier data                                                         */
@@ -298,6 +299,13 @@ export default function Pricing() {
               ))}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* Security Report */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-lg mx-auto">
+          <PubGuardCard />
         </div>
       </section>
 

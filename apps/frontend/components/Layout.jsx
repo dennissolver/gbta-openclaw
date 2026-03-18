@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
+import { PubGuardBadgeCompact } from './PubGuardBadge';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -56,8 +57,9 @@ export default function Layout({ children }) {
               ))}
             </nav>
 
-            {/* Auth CTA */}
+            {/* Security Badge + Auth CTA */}
             <div className="flex items-center gap-3">
+              <PubGuardBadgeCompact className="hidden md:block" />
               {!loading && user ? (
                 <div className="flex items-center gap-3">
                   <span className="text-dark-400 text-sm hidden sm:inline">

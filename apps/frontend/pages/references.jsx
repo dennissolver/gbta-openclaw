@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { PubGuardCard } from '../components/PubGuardBadge';
 
 const DEPENDENCIES = [
   { name: 'OpenClaw', license: 'MIT', url: 'https://github.com/openclaw/openclaw/blob/main/LICENSE' },
@@ -115,6 +116,11 @@ export default function References() {
             ))}
           </div>
         </AccordionSection>
+
+        {/* Security Report */}
+        <div className="mb-6">
+          <PubGuardCard />
+        </div>
 
         {/* Disclaimer */}
         <AccordionSection title="Disclaimer" defaultOpen={true}>
