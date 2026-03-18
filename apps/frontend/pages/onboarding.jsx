@@ -144,7 +144,7 @@ export default function Onboarding() {
             user_id: user.id,
             platform: ch,
             connected: false,
-          }, { onConflict: 'user_id,platform' });
+          }, { onConflict: 'user_id, platform', ignoreDuplicates: true });
         }
       }
     } catch (e) {
@@ -161,7 +161,7 @@ export default function Onboarding() {
             user_id: user.id,
             skill_bundle: skill,
             enabled: true,
-          }, { onConflict: 'user_id,skill_bundle' });
+          }, { onConflict: 'user_id, skill_bundle', ignoreDuplicates: true });
         }
       }
     } catch (e) {
@@ -176,9 +176,17 @@ export default function Onboarding() {
     setProvisioningStatus('provisioning');
     setProvisioningError('');
     try {
+      // Get the current session token to authenticate the API call
+      let authHeaders = { 'Content-Type': 'application/json' };
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      }
       const resp = await fetch('/api/provision-agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
       });
       const data = await resp.json();
       if (!resp.ok) {
