@@ -1,17 +1,26 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useAuth } from '../lib/auth';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/features', label: 'Features' },
   { href: '/templates', label: 'Templates' },
-  { href: '/workspace', label: 'Workspace' },
+  { href: '/workspace', label: 'Workspace', auth: true },
   { href: '/functions', label: 'Functions' },
 ];
 
 export default function Layout({ children }) {
   const router = useRouter();
+  const { user, profile, signOut, loading } = useAuth();
+
+  const handleProtectedClick = (e, item) => {
+    if (item.auth && !user) {
+      e.preventDefault();
+      router.push('/onboarding');
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,6 +45,7 @@ export default function Layout({ children }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => handleProtectedClick(e, item)}
                   className={router.pathname === item.href ? 'nav-link-active' : 'nav-link'}
                 >
                   {item.label}
@@ -43,11 +53,22 @@ export default function Layout({ children }) {
               ))}
             </nav>
 
-            {/* CTA */}
+            {/* Auth CTA */}
             <div className="flex items-center gap-3">
-              <Link href="/workspace" className="btn-primary text-sm">
-                Launch Agent
-              </Link>
+              {!loading && user ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-dark-400 text-sm hidden sm:inline">
+                    {profile?.display_name || user.email}
+                  </span>
+                  <button onClick={signOut} className="btn-secondary text-sm px-4 py-1.5">
+                    Sign Out
+                  </button>
+                </div>
+              ) : !loading ? (
+                <Link href="/onboarding" className="btn-primary text-sm">
+                  Get Started
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>
@@ -59,6 +80,7 @@ export default function Layout({ children }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={(e) => handleProtectedClick(e, item)}
             className={`whitespace-nowrap text-sm ${router.pathname === item.href ? 'nav-link-active' : 'nav-link'}`}
           >
             {item.label}

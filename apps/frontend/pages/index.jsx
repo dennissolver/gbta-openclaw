@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '../lib/auth';
 
 const HIGHLIGHTS = [
   {
@@ -44,6 +45,8 @@ const USE_CASES = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+  const launchHref = user ? '/workspace' : '/onboarding';
   return (
     <div>
       {/* Hero */}
@@ -64,7 +67,7 @@ export default function Home() {
               for Australian businesses.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/workspace" className="btn-primary text-lg px-8 py-3">
+              <Link href={launchHref} className="btn-primary text-lg px-8 py-3">
                 Launch Your Agent
               </Link>
               <Link href="/features" className="btn-secondary text-lg px-8 py-3">
@@ -186,7 +189,7 @@ export default function Home() {
           <p className="text-dark-300 text-lg mb-8 max-w-xl mx-auto">
             Launch your GBTA-configured OpenClaw agent in minutes. Pre-loaded with curated skills and templates.
           </p>
-          <Link href="/workspace" className="btn-primary text-lg px-10 py-3">
+          <Link href={launchHref} className="btn-primary text-lg px-10 py-3">
             Launch Your Agent
           </Link>
         </div>
