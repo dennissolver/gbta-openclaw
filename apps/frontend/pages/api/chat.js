@@ -88,7 +88,13 @@ export default async function handler(req, res) {
   try {
     await openclaw.sendMessageStream(sessionKey, message.trim(), (event) => {
       if (closed) return;
-      sendSSE(event);
+      // Normalize: gateway sends message as {role, content} object,
+      // but frontend expects message as a plain string
+      const normalized = { ...event };
+      if (normalized.message && typeof normalized.message === 'object') {
+        normalized.message = normalized.message.content || '';
+      }
+      sendSSE(normalized);
     });
   } catch (err) {
     if (!closed) {

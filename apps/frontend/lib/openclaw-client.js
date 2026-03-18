@@ -281,7 +281,7 @@ async function sendMessageStream(sessionKey, message, callback) {
       reject(new Error('Chat response timed out after 120s'));
     }, 120000);
 
-    const unsub = onEvent('chat', (payload) => {
+    const unsub = onEvent('chat.event', (payload) => {
       // Only handle events for our session
       if (payload.sessionKey !== sessionKey) return;
 
