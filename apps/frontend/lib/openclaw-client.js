@@ -18,7 +18,7 @@ const MOCK_MODE = !GATEWAY_URL;
 // Device identity for gateway auth
 const DEVICE_PRIVATE_KEY = Buffer.from('QI9Y/9fHIkRKq/QMCCVwjE473adbYAvdgnzv1RvqFVM=', 'base64');
 const DEVICE_PUBLIC_KEY = '7l2rKev5BWUaj8N5QnePS4kPZPN2fZEYoThevQT529o=';
-const DEVICE_ID = '1e69b58c92654b57ae272dfa9d1ceb39b02b577d2084ac5d14991d2387b325fd';
+const DEVICE_ID = 'a683ed7d0950860eb50d29499fdf050bcf686f3bcfde8555752fadeaa8d3427f';
 
 // ---------------------------------------------------------------------------
 // Helpers
