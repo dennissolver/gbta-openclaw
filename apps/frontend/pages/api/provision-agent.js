@@ -83,6 +83,9 @@ export default async function handler(req, res) {
   console.log('[provision-agent] Calling VPS:', targetUrl, 'agentId:', agentId);
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     const vpsResp = await fetch(targetUrl, {
       method: 'POST',
       headers: {
@@ -93,8 +96,10 @@ export default async function handler(req, res) {
         agentId,
         model: 'openrouter/auto',
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     const vpsText = await vpsResp.text();
     console.log('[provision-agent] VPS response:', vpsResp.status, vpsText);
