@@ -5,8 +5,9 @@ import { useAuth } from '../../lib/auth';
 export default function ProjectWorkspace() {
   const router = useRouter();
   const { id: projectId } = router.query;
-  const { user, supabase } = useAuth();
+  const { user, profile, supabase } = useAuth();
   const userId = user?.id || 'local-dev-user';
+  const agentPrefix = profile?.openclaw_agent_id || 'main';
 
   // Project state
   const [project, setProject] = useState(null);
@@ -113,7 +114,7 @@ export default function ProjectWorkspace() {
 
   const createNewSession = async (isDefault) => {
     if (!projectId) return;
-    const sessionKey = `agent:main:project:${projectId}:${Date.now()}`;
+    const sessionKey = `agent:${agentPrefix}:project:${projectId}:${Date.now()}`;
     try {
       const headers = {
         'Content-Type': 'application/json',
