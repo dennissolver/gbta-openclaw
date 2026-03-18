@@ -91,15 +91,71 @@ export default async function handler(req, res) {
     }
   }
 
-  // Build messages array
-  const messages = [];
-  if (instructions && typeof instructions === 'string' && instructions.trim()) {
-    messages.push({ role: 'system', content: instructions.trim() });
-  }
-  messages.push({ role: 'user', content: message.trim() });
-
-  // Build session key for the header
+  // Build session key
   const sessionKey = explicitSessionKey || `agent:${agentId}:web:${userId}`;
+
+  // Build messages array with full context
+  const messages = [];
+
+  // 1. System prompt with project context
+  let systemPrompt = 'You are the EasyOpenClaw AI agent. Be helpful, professional, and concise.';
+  if (instructions && typeof instructions === 'string' && instructions.trim()) {
+    systemPrompt = instructions.trim();
+  }
+
+  // 2. Load project details if this is a project session
+  const projectMatch = sessionKey.match(/project:([^:]+)/);
+  if (projectMatch) {
+    const projectId = projectMatch[1];
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && serviceKey) {
+      try {
+        const db = createClient(supabaseUrl, serviceKey);
+        const { data: project } = await db
+          .from('projects')
+          .select('name, description, instructions')
+          .eq('id', projectId)
+          .single();
+
+        if (project) {
+          systemPrompt = `You are working on the project "${project.name}".`;
+          if (project.description) systemPrompt += ` Project description: ${project.description}.`;
+          if (project.instructions) systemPrompt += `\n\nProject instructions: ${project.instructions}`;
+          systemPrompt += '\n\nAlways be aware of which project you are in and maintain context across the conversation.';
+        }
+      } catch (e) {
+        console.warn('[chat] Project lookup failed:', e.message);
+      }
+    }
+  }
+
+  messages.push({ role: 'system', content: systemPrompt });
+
+  // 3. Load recent chat history from Supabase for conversation continuity
+  const serviceKey2 = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl && serviceKey2) {
+    try {
+      const db = createClient(supabaseUrl, serviceKey2);
+      const { data: history } = await db
+        .from('chat_messages')
+        .select('role, content')
+        .eq('session_key', sessionKey)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(20); // Last 20 messages for context
+
+      if (history && history.length > 0) {
+        for (const msg of history) {
+          messages.push({ role: msg.role, content: msg.content });
+        }
+      }
+    } catch (e) {
+      console.warn('[chat] History lookup failed:', e.message);
+    }
+  }
+
+  // 4. Add the current user message
+  messages.push({ role: 'user', content: message.trim() });
 
   const httpUrl = gatewayHttpUrl();
   if (!httpUrl) {
