@@ -79,8 +79,11 @@ export default async function handler(req, res) {
   }
 
   // Call VPS admin API to create the agent
+  const targetUrl = `${vpsAdminUrl}/agents/create`;
+  console.log('[provision-agent] Calling VPS:', targetUrl, 'agentId:', agentId);
+
   try {
-    const vpsResp = await fetch(`${vpsAdminUrl}/agents/create`, {
+    const vpsResp = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,9 +93,19 @@ export default async function handler(req, res) {
         agentId,
         model: 'openrouter/auto',
       }),
+      signal: AbortSignal.timeout(15000),
     });
 
-    const vpsData = await vpsResp.json();
+    const vpsText = await vpsResp.text();
+    console.log('[provision-agent] VPS response:', vpsResp.status, vpsText);
+
+    let vpsData;
+    try {
+      vpsData = JSON.parse(vpsText);
+    } catch (parseErr) {
+      console.error('[provision-agent] VPS response not JSON:', vpsText);
+      return res.status(502).json({ error: 'VPS returned invalid response', detail: vpsText.slice(0, 200) });
+    }
 
     if (!vpsResp.ok) {
       console.error('[provision-agent] VPS API error:', vpsData);
@@ -124,10 +137,12 @@ export default async function handler(req, res) {
       status: 'provisioned',
     });
   } catch (err) {
-    console.error('[provision-agent] Error:', err);
+    console.error('[provision-agent] Error:', err.name, err.message, 'VPS URL:', vpsAdminUrl);
     return res.status(500).json({
       error: 'Failed to provision agent',
-      detail: err.message,
+      detail: `${err.name}: ${err.message}`,
+      vpsUrl: vpsAdminUrl ? 'configured' : 'MISSING',
+      vpsToken: vpsAdminToken ? 'configured' : 'MISSING',
     });
   }
 }
