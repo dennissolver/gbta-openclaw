@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
 import { PubGuardBadgeCompact } from './PubGuardBadge';
+import AgentWidget from './AgentWidget';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -119,6 +120,9 @@ export default function Layout({ children }) {
           </div>
         </div>
       </footer>
+
+      {/* Floating agent widget — text + voice on all pages */}
+      <AgentWidget />
     </div>
   );
 }
