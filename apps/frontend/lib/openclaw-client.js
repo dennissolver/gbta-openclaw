@@ -368,9 +368,12 @@ async function resetSession(sessionKey, reason = 'new') {
 
 /**
  * Build the session key for a given user.
+ * @param {string} userId
+ * @param {string} [agentId] — OpenClaw agent ID (e.g. "user-abc123"). Defaults to "main".
  */
-function sessionKeyForUser(userId) {
-  return `agent:main:web:${userId}`;
+function sessionKeyForUser(userId, agentId) {
+  const agent = agentId || 'main';
+  return `agent:${agent}:web:${userId}`;
 }
 
 /**

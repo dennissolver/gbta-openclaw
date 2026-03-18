@@ -1,0 +1,29 @@
+[Unit]
+Description=OpenClaw Admin API (Agent Management)
+After=network-online.target openclaw.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/openclaw-admin
+ExecStart=/usr/bin/node /opt/openclaw-admin/admin-api.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=ADMIN_API_PORT=18790
+# Token is read from the gateway config; set it here explicitly:
+# Environment=ADMIN_API_TOKEN=<your-gateway-token>
+
+# Security hardening
+NoNewPrivileges=false
+ProtectSystem=false
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-admin-api
+
+[Install]
+WantedBy=multi-user.target

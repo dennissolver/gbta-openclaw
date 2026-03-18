@@ -66,7 +66,29 @@ export default async function handler(req, res) {
   }
 
   const userId = user?.id || 'anonymous';
-  const sessionKey = explicitSessionKey || openclaw.sessionKeyForUser(userId);
+
+  // Resolve the user's agent ID from their profile (if provisioned)
+  let agentId = null;
+  if (supabaseUrl && supabaseAnonKey && userId !== 'anonymous') {
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const db = createClient(supabaseUrl, serviceKey);
+        const { data: profile } = await db
+          .from('profiles')
+          .select('openclaw_agent_id, agent_provisioned')
+          .eq('id', userId)
+          .single();
+        if (profile?.agent_provisioned && profile?.openclaw_agent_id) {
+          agentId = profile.openclaw_agent_id;
+        }
+      }
+    } catch (e) {
+      console.warn('[chat] Profile lookup failed (non-blocking):', e.message);
+    }
+  }
+
+  const sessionKey = explicitSessionKey || openclaw.sessionKeyForUser(userId, agentId);
 
   // Set up SSE headers
   res.writeHead(200, {

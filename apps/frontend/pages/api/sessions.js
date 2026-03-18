@@ -42,12 +42,35 @@ export default async function handler(req, res) {
 
   const userId = user.id;
 
+  // Resolve agent ID from profile
+  let agentId = null;
+  if (supabaseUrl && supabaseAnonKey) {
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const db = createClient(supabaseUrl, serviceKey);
+        const { data: profile } = await db
+          .from('profiles')
+          .select('openclaw_agent_id, agent_provisioned')
+          .eq('id', userId)
+          .single();
+        if (profile?.agent_provisioned && profile?.openclaw_agent_id) {
+          agentId = profile.openclaw_agent_id;
+        }
+      }
+    } catch (e) {
+      // Non-blocking — fall back to main agent
+    }
+  }
+
+  const agentPrefix = agentId || 'main';
+
   switch (req.method) {
     case 'GET': {
       try {
         const result = await openclaw.listSessions(50);
-        // Filter sessions to only those belonging to this user
-        const userPrefix = `agent:main:web:${userId}`;
+        // Filter sessions to only those belonging to this user's agent
+        const userPrefix = `agent:${agentPrefix}:web:${userId}`;
         const sessions = (result.sessions || []).filter(s =>
           s.key?.startsWith(userPrefix)
         );
@@ -60,7 +83,7 @@ export default async function handler(req, res) {
 
     case 'POST': {
       const { sessionKey, reason = 'new' } = req.body || {};
-      const key = sessionKey || openclaw.sessionKeyForUser(userId);
+      const key = sessionKey || openclaw.sessionKeyForUser(userId, agentId);
       try {
         const result = await openclaw.resetSession(key, reason);
         return res.json(result);
@@ -76,7 +99,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'sessionKey is required' });
       }
       // Verify the session belongs to this user
-      const userPrefix = `agent:main:web:${userId}`;
+      const userPrefix = `agent:${agentPrefix}:web:${userId}`;
       if (!sessionKey.startsWith(userPrefix)) {
         return res.status(403).json({ error: 'Forbidden' });
       }

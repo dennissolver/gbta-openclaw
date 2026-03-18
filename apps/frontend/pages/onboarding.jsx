@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
 
-const STEPS = ['auth', 'risk', 'ai-tier', 'channels', 'skills'];
+const STEPS = ['auth', 'risk', 'ai-tier', 'channels', 'skills', 'provisioning'];
 
 const AI_TIERS = [
   {
@@ -73,6 +73,8 @@ export default function Onboarding() {
   const [aiTier, setAiTier] = useState('balanced');
   const [selectedChannels, setSelectedChannels] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState(['email-manager', 'research']);
+  const [provisioningStatus, setProvisioningStatus] = useState('idle'); // idle, provisioning, done, error
+  const [provisioningError, setProvisioningError] = useState('');
 
   // Skip to correct step based on auth/onboarding state (only on initial load)
   const initialStepSet = useRef(false);
@@ -162,14 +164,45 @@ export default function Onboarding() {
           }, { onConflict: 'user_id,skill_bundle' });
         }
       }
-      await updateProfile({
-        onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
-      });
     } catch (e) {
-      console.warn('Profile update failed (non-blocking):', e);
+      console.warn('Skills save failed (non-blocking):', e);
     }
-    router.push('/workspace');
+    // Move to provisioning step
+    setStep(5);
+    provisionAgent();
+  };
+
+  const provisionAgent = async () => {
+    setProvisioningStatus('provisioning');
+    setProvisioningError('');
+    try {
+      const resp = await fetch('/api/provision-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || data.detail || 'Provisioning failed');
+      }
+      setProvisioningStatus('done');
+      // Mark onboarding as complete
+      try {
+        await updateProfile({
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Profile update failed (non-blocking):', e);
+      }
+      // Brief pause to show success, then redirect
+      setTimeout(() => {
+        router.push('/workspace');
+      }, 1500);
+    } catch (err) {
+      console.error('Agent provisioning failed:', err);
+      setProvisioningStatus('error');
+      setProvisioningError(err.message);
+    }
   };
 
   const toggleChannel = (id) => {
@@ -442,6 +475,60 @@ export default function Onboarding() {
             <button onClick={handleSkills} className="btn-primary w-full">
               Launch My Agent{selectedSkills.length > 0 && ` (${selectedSkills.length} skills)`}
             </button>
+          </div>
+        )}
+
+        {/* Step 5: Provisioning */}
+        {currentStep === 'provisioning' && (
+          <div className="card text-center py-12">
+            {provisioningStatus === 'provisioning' && (
+              <>
+                <div className="flex justify-center mb-6">
+                  <div className="w-16 h-16 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <h1 className="text-2xl font-bold text-white mb-2">Setting Up Your Agent...</h1>
+                <p className="text-dark-400">
+                  We're provisioning a dedicated AI agent on our infrastructure. This takes a few seconds.
+                </p>
+              </>
+            )}
+
+            {provisioningStatus === 'done' && (
+              <>
+                <div className="text-5xl mb-4">&#10003;</div>
+                <h1 className="text-2xl font-bold text-white mb-2">Agent Ready!</h1>
+                <p className="text-dark-400">
+                  Your personal OpenClaw agent has been provisioned. Redirecting to workspace...
+                </p>
+              </>
+            )}
+
+            {provisioningStatus === 'error' && (
+              <>
+                <div className="text-5xl mb-4">&#9888;</div>
+                <h1 className="text-2xl font-bold text-white mb-2">Provisioning Issue</h1>
+                <p className="text-dark-400 mb-4">
+                  {provisioningError || 'Something went wrong while setting up your agent.'}
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={provisionAgent} className="btn-primary">
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateProfile({
+                        onboarding_completed: true,
+                        onboarding_completed_at: new Date().toISOString(),
+                      }).catch(() => {});
+                      router.push('/workspace');
+                    }}
+                    className="btn-secondary"
+                  >
+                    Skip for Now
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

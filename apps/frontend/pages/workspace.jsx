@@ -4,8 +4,10 @@ import { useAuth } from '../lib/auth';
 
 export default function Workspace() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const userId = user?.id || 'local-dev-user';
+  const agentId = profile?.openclaw_agent_id || null;
+  const agentPrefix = agentId || 'main';
 
   // Chat state
   const [msg, setMsg] = useState('');
@@ -23,12 +25,12 @@ export default function Workspace() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
-  // Set default session key based on user
+  // Set default session key based on user and their agent
   useEffect(() => {
     if (userId) {
-      setActiveSessionKey(`agent:main:web:${userId}`);
+      setActiveSessionKey(`agent:${agentPrefix}:web:${userId}`);
     }
-  }, [userId]);
+  }, [userId, agentPrefix]);
 
   // Load prompt from query params
   useEffect(() => {
@@ -194,7 +196,7 @@ export default function Workspace() {
 
   // Session management
   const createNewSession = async () => {
-    const newKey = `agent:main:web:${userId}:${Date.now()}`;
+    const newKey = `agent:${agentPrefix}:web:${userId}:${Date.now()}`;
     try {
       await fetch('/api/sessions', {
         method: 'POST',
@@ -246,7 +248,7 @@ export default function Workspace() {
       });
       fetchSessions();
       if (key === activeSessionKey) {
-        setActiveSessionKey(`agent:main:web:${userId}`);
+        setActiveSessionKey(`agent:${agentPrefix}:web:${userId}`);
         setLogs([
           { role: 'system', text: 'Session deleted. Switched to default session.' },
         ]);
@@ -277,9 +279,9 @@ export default function Workspace() {
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {/* Default session */}
             <button
-              onClick={() => switchSession(`agent:main:web:${userId}`)}
+              onClick={() => switchSession(`agent:${agentPrefix}:web:${userId}`)}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                activeSessionKey === `agent:main:web:${userId}`
+                activeSessionKey === `agent:${agentPrefix}:web:${userId}`
                   ? 'bg-brand-600/20 text-brand-400 border border-brand-500/30'
                   : 'text-dark-300 hover:bg-dark-800'
               }`}
