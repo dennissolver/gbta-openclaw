@@ -8,8 +8,12 @@
  * Response: SSE stream of chat.completion.chunk events
  */
 
+import { createClient } from '@supabase/supabase-js';
+
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL;
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function gatewayHttpUrl() {
   if (!GATEWAY_URL) return null;
@@ -70,6 +74,30 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[voice-llm] Error:', err.message);
     content = 'Sorry, I encountered an error. Please try again.';
+  }
+
+  // Persist voice conversation to Supabase
+  if (supabaseUrl && supabaseServiceKey && content) {
+    try {
+      const db = createClient(supabaseUrl, supabaseServiceKey);
+      const lastUserMsg = [...enhancedMessages].reverse().find(m => m.role === 'user');
+      const extraBody = req.body?.elevenlabs_extra_body || {};
+      const userId = extraBody.user_id || null;
+      const sessionKey = `voice:${extraBody.session_id || Date.now()}`;
+
+      const rows = [];
+      if (lastUserMsg) {
+        rows.push({ user_id: userId, session_key: sessionKey, role: 'user', content: lastUserMsg.content });
+      }
+      rows.push({ user_id: userId, session_key: sessionKey, role: 'assistant', content });
+
+      // Only insert if we have a user_id
+      if (userId) {
+        await db.from('chat_messages').insert(rows);
+      }
+    } catch (dbErr) {
+      console.warn('[voice-llm] Failed to persist transcript:', dbErr.message);
+    }
   }
 
   // If ElevenLabs wants streaming (they always do), return SSE

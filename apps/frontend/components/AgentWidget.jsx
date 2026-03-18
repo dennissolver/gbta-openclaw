@@ -91,8 +91,8 @@ export default function AgentWidget() {
             <div className="flex-1 overflow-hidden flex flex-col">
               {mode === 'text' ? (
                 <TextChat />
-              ) : (
-                <VoiceChat />
+              ) : /* voice mode */ (
+                <VoiceChat userId={user?.id} />
               )}
             </div>
           )}
@@ -255,7 +255,7 @@ function TextChat() {
 
 /* ─── Voice Chat ─────────────────────────────────────────────────── */
 
-function VoiceChat() {
+function VoiceChat({ userId }) {
   const [status, setStatus] = useState('idle'); // idle | loading | requesting | connected | error | unsupported
   const [errorMsg, setErrorMsg] = useState('');
   const [transcript, setTranscript] = useState([]);
@@ -305,10 +305,10 @@ function VoiceChat() {
     );
   }
 
-  return <VoiceSessionInner UseConversation={UseConv} transcript={transcript} setTranscript={setTranscript} />;
+  return <VoiceSessionInner UseConversation={UseConv} transcript={transcript} setTranscript={setTranscript} userId={userId} />;
 }
 
-function VoiceSessionInner({ UseConversation, transcript, setTranscript }) {
+function VoiceSessionInner({ UseConversation, transcript, setTranscript, userId }) {
   const [status, setStatus] = useState('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const bottomRef = useRef(null);
@@ -346,7 +346,21 @@ function VoiceSessionInner({ UseConversation, transcript, setTranscript }) {
       return;
     }
     try {
-      await conversation.startSession({ agentId: ELEVENLABS_AGENT_ID });
+      await conversation.startSession({
+        agentId: ELEVENLABS_AGENT_ID,
+        clientTools: {},
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: null, // use agent default
+            },
+          },
+        },
+        customLlmExtraBody: {
+          user_id: userId || null,
+          session_id: `voice-${Date.now()}`,
+        },
+      });
     } catch (err) {
       setStatus('error');
       setErrorMsg(`Failed to connect: ${err.message || 'Unknown error'}`);
