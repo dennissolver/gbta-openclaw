@@ -11,7 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const vpsAdminUrl = process.env.VPS_ADMIN_URL || 'http://170.64.186.98:18790';
+const vpsAdminUrl = process.env.VPS_ADMIN_URL;
 const vpsAdminToken = process.env.VPS_ADMIN_TOKEN || '';
 
 async function getUser(req) {

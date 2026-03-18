@@ -8,8 +8,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+const { rateLimit } = require('../../lib/rate-limit');
 
 const openclaw = require('../../lib/openclaw-client');
+const chatLimiter = rateLimit({ interval: 60000, limit: 30 });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -57,15 +59,15 @@ export default async function handler(req, res) {
   // Authenticate
   const { user, error: authError } = await getUser(req);
   if (!user) {
-    // In dev without Supabase, allow anonymous
-    if (!supabaseUrl) {
-      // fall through with mock user
-    } else {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const userId = user?.id || 'anonymous';
+  // Rate limit
+  if (!chatLimiter.check(user.id)) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
+
+  const userId = user.id;
 
   // Resolve the user's agent ID from their profile (if provisioned)
   let agentId = null;

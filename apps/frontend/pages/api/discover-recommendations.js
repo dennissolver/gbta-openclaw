@@ -1,6 +1,22 @@
+import { getUser } from '../../lib/api-auth';
+import { rateLimit } from '../../lib/rate-limit';
+
+const limiter = rateLimit({ interval: 60000, limit: 10 });
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Auth required
+  const { user } = await getUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Rate limit
+  if (!limiter.check(user.id)) {
+    return res.status(429).json({ error: 'Too many requests' });
   }
 
   const { transcript } = req.body;

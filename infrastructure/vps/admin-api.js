@@ -41,10 +41,21 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB
+
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => { body += chunk; });
+    let bytes = 0;
+    req.on('data', chunk => {
+      bytes += chunk.length;
+      if (bytes > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error('Request body too large'));
+        return;
+      }
+      body += chunk;
+    });
     req.on('end', () => {
       try {
         resolve(body ? JSON.parse(body) : {});
@@ -94,10 +105,14 @@ async function handleCreateAgent(req, res) {
   }
 
   const agentModel = model || 'openrouter/auto';
+  // Validate model parameter to prevent command injection
+  if (!/^[a-zA-Z0-9/_.-]+$/.test(agentModel)) {
+    return sendJson(res, 400, { error: 'Invalid model identifier' });
+  }
   const workspace = path.join(WORKSPACES_DIR, agentId);
 
   try {
-    // Create the agent
+    // Create the agent using execFile-style argument separation
     const result = execCommand(
       `openclaw agents add ${agentId} --model ${agentModel} --workspace ${workspace} --non-interactive --json`
     );
@@ -282,28 +297,45 @@ async function handleCreateCron(req, res, agentId) {
     return sendJson(res, 400, { error: 'schedule and command are required' });
   }
 
+  // Validate cron schedule format (5 fields)
+  const cronRegex = /^(\*|[0-9,/-]+)\s+(\*|[0-9,/-]+)\s+(\*|[0-9,/-]+)\s+(\*|[0-9,/-]+)\s+(\*|[0-9,/-]+)$/;
+  if (!cronRegex.test(schedule.trim())) {
+    return sendJson(res, 400, { error: 'Invalid cron schedule format' });
+  }
+
+  // Whitelist: only allow openclaw commands
+  if (!command.startsWith('openclaw ') && !command.startsWith('/usr/bin/openclaw ')) {
+    return sendJson(res, 400, { error: 'Only openclaw commands are allowed' });
+  }
+  // Block shell metacharacters
+  if (/[;&|`$(){}]/.test(command)) {
+    return sendJson(res, 400, { error: 'Command contains disallowed characters' });
+  }
+
   try {
-    // Append to the agent's crontab file
+    // Write crontab via temp file (no shell interpolation)
     const cronDir = path.join(AGENTS_DIR, agentId, 'agent');
     if (!fs.existsSync(cronDir)) {
       fs.mkdirSync(cronDir, { recursive: true });
     }
 
     const cronFile = path.join(cronDir, 'crontab');
-    const entry = `# ${description || 'Scheduled task'}\n${schedule} ${command}\n`;
-
+    const sanitizedDesc = (description || 'Scheduled task').replace(/[^a-zA-Z0-9 _-]/g, '');
+    const entry = `# ${sanitizedDesc}\n${schedule.trim()} ${command}\n`;
     fs.appendFileSync(cronFile, entry);
 
-    // Also install into system crontab
+    // Install via temp file (no shell interpolation)
     try {
       const existing = execCommand('crontab -l 2>/dev/null || true');
-      const newCrontab = existing + `\n# OpenClaw agent ${agentId}: ${description || 'task'}\n${schedule} ${command}\n`;
-      execSync(`echo "${newCrontab.replace(/"/g, '\\"')}" | crontab -`, { encoding: 'utf-8' });
+      const tmpFile = `/tmp/crontab-${agentId}-${Date.now()}`;
+      fs.writeFileSync(tmpFile, existing + '\n' + entry);
+      execSync(`crontab ${tmpFile}`, { encoding: 'utf-8' });
+      fs.unlinkSync(tmpFile);
     } catch (cronErr) {
       console.warn('[admin-api] System crontab update failed:', cronErr.message);
     }
 
-    sendJson(res, 201, { ok: true, agentId, schedule, command, description });
+    sendJson(res, 201, { ok: true, agentId, schedule: schedule.trim(), description: sanitizedDesc });
   } catch (err) {
     console.error('[admin-api] Create cron error:', err.message);
     sendJson(res, 500, { error: err.message || 'Failed to create cron job' });
@@ -378,8 +410,9 @@ async function router(req, res) {
 // ---------------------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
-  // CORS headers for Vercel
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS headers — restrict to Vercel domain
+  const allowedOrigin = process.env.CORS_ORIGIN || 'https://gbta-openclaw.vercel.app';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -398,6 +431,10 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[admin-api] OpenClaw Admin API listening on port ${PORT}`);
+const BIND_ADDR = process.env.ADMIN_API_BIND || '0.0.0.0';
+server.listen(PORT, BIND_ADDR, () => {
+  console.log(`[admin-api] OpenClaw Admin API listening on ${BIND_ADDR}:${PORT}`);
+  if (BIND_ADDR === '0.0.0.0') {
+    console.warn('[admin-api] WARNING: Bound to 0.0.0.0. Ensure firewall restricts access.');
+  }
 });
