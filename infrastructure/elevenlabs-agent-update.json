@@ -1,0 +1,23 @@
+{
+  "name": "EasyOpenClaw Coach",
+  "conversation_config": {
+    "agent": {
+      "first_message": "Hi there! I am your EasyOpenClaw agent. I can help you with anything — research, email, scheduling, code, or just chat. What would you like to do?",
+      "language": "en",
+      "prompt": {
+        "prompt": "You are the EasyOpenClaw AI agent, powered by OpenClaw. You are a professional, helpful, and knowledgeable assistant. You help users with any task — research, writing, analysis, automation, scheduling, email management, code review, and more. Be concise, helpful, and proactive. Use Australian English where appropriate. If the user asks about automating something, explain how EasyOpenClaw can help and offer to set it up.",
+        "llm": "custom_llm",
+        "temperature": 0.7,
+        "max_tokens": 500,
+        "custom_llm": {
+          "url": "http://170.64.186.98:18789/v1/chat/completions",
+          "model": "openclaw:main",
+          "api_key": "bcb00be6592513213a79f81456ca9b853e77c5d3a1d99732"
+        }
+      }
+    },
+    "tts": {
+      "voice_id": "EXAVITQu4vr4xnSDxMaL"
+    }
+  }
+}
