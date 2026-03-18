@@ -9,10 +9,16 @@
  */
 
 const WebSocket = require('ws');
+const crypto = require('crypto');
 
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL;
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN;
 const MOCK_MODE = !GATEWAY_URL;
+
+// Device identity for gateway auth
+const DEVICE_PRIVATE_KEY = Buffer.from('QI9Y/9fHIkRKq/QMCCVwjE473adbYAvdgnzv1RvqFVM=', 'base64');
+const DEVICE_PUBLIC_KEY = '7l2rKev5BWUaj8N5QnePS4kPZPN2fZEYoThevQT529o=';
+const DEVICE_ID = '1e69b58c92654b57ae272dfa9d1ceb39b02b577d2084ac5d14991d2387b325fd';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,7 +96,23 @@ function getConnection() {
       if (msg.type === 'event') {
         // During handshake: wait for connect.challenge
         if (msg.event === 'connect.challenge' && !_connected) {
-          console.log('[openclaw] Got connect.challenge, sending connect request...');
+          console.log('[openclaw] Got connect.challenge, signing and connecting...');
+          const nonce = msg.payload.nonce;
+          const signedAt = Date.now();
+
+          // Sign the challenge: v2 payload = deviceId:clientId:role:scopes:token:nonce
+          const signPayload = `${DEVICE_ID}:gateway-client:operator:operator.read,operator.write,operator.admin:${GATEWAY_TOKEN}:${nonce}`;
+          const privateKeyObj = crypto.createPrivateKey({
+            key: Buffer.concat([
+              // Ed25519 PKCS8 prefix (16 bytes) + 32-byte raw key
+              Buffer.from('302e020100300506032b657004220420', 'hex'),
+              DEVICE_PRIVATE_KEY,
+            ]),
+            format: 'der',
+            type: 'pkcs8',
+          });
+          const signature = crypto.sign(null, Buffer.from(signPayload), privateKeyObj).toString('base64');
+
           const connectReq = {
             type: 'req',
             id: 'connect-1',
@@ -105,8 +127,15 @@ function getConnection() {
                 mode: 'backend',
               },
               role: 'operator',
-              scopes: ['operator.read', 'operator.write'],
+              scopes: ['operator.read', 'operator.write', 'operator.admin'],
               auth: { token: GATEWAY_TOKEN },
+              device: {
+                id: DEVICE_ID,
+                publicKey: DEVICE_PUBLIC_KEY,
+                signature: signature,
+                signedAt: signedAt,
+                nonce: nonce,
+              },
             },
           };
           ws.send(JSON.stringify(connectReq));
