@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message, sessionKey: explicitSessionKey } = req.body || {};
+  const { message, sessionKey: explicitSessionKey, instructions } = req.body || {};
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
@@ -85,8 +85,13 @@ export default async function handler(req, res) {
   let closed = false;
   req.on('close', () => { closed = true; });
 
+  // Prepend project instructions if provided
+  const fullMessage = instructions && typeof instructions === 'string' && instructions.trim()
+    ? `[System Context: ${instructions.trim()}]\n\nUser: ${message.trim()}`
+    : message.trim();
+
   try {
-    await openclaw.sendMessageStream(sessionKey, message.trim(), (event) => {
+    await openclaw.sendMessageStream(sessionKey, fullMessage, (event) => {
       if (closed) return;
       // Normalize: gateway sends message as {role, content} object,
       // but frontend expects message as a plain string

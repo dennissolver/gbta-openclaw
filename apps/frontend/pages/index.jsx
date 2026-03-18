@@ -182,6 +182,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Projects */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-white mb-4">AI Projects</h2>
+          <p className="text-dark-300 text-lg max-w-2xl mx-auto">
+            Organized workspaces with custom instructions, pinned functions, and dedicated sessions.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+          {[
+            { icon: '\ud83d\udce7', name: 'Email Management', desc: 'Process, organize, and automate your inbox', color: 'badge-green' },
+            { icon: '\ud83d\udcbb', name: 'Code & DevOps', desc: 'Review code and manage deployments', color: 'badge-blue' },
+            { icon: '\ud83d\udd0d', name: 'Research & Analysis', desc: 'Deep research and competitive intelligence', color: 'badge-purple' },
+            { icon: '\ud83d\udcca', name: 'Business Operations', desc: 'Invoices, reports, and client management', color: 'badge-orange' },
+          ].map((p, i) => (
+            <Link key={i} href="/projects" className="card-hover text-center">
+              <div className="text-3xl mb-3">{p.icon}</div>
+              <h3 className="text-white font-semibold mb-1">{p.name}</h3>
+              <p className="text-dark-400 text-sm mb-3">{p.desc}</p>
+              <span className={p.color}>Start Project</span>
+            </Link>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link href="/projects" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+            View all project templates &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="card text-center bg-gradient-to-br from-dark-900 to-dark-800 border-brand-500/20">
