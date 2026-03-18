@@ -1,46 +1,47 @@
 /**
- * POST /api/chat — SSE endpoint for streaming chat with OpenClaw gateway
+ * POST /api/chat — Chat with OpenClaw via HTTP API
  *
- * Body: { message: string, sessionKey?: string }
+ * Uses the OpenAI-compatible /v1/chat/completions endpoint on the gateway.
+ * This is a simple HTTP POST (not WebSocket), so it works in Vercel serverless.
+ *
+ * Body: { message: string, sessionKey?: string, instructions?: string }
  * Auth: Authorization header with Bearer token, or Supabase cookie
- *
- * Streams back Server-Sent Events with chat deltas/final/error.
  */
 
 import { createClient } from '@supabase/supabase-js';
 const { rateLimit } = require('../../lib/rate-limit');
 
-const openclaw = require('../../lib/openclaw-client');
 const chatLimiter = rateLimit({ interval: 60000, limit: 30 });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL; // ws://host:port
+const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN;
 
-/**
- * Extract authenticated user from the request.
- * Returns { user, error }.
- */
+// Convert ws:// URL to http:// for the HTTP API
+function gatewayHttpUrl() {
+  if (!GATEWAY_URL) return null;
+  return GATEWAY_URL.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
+}
+
 async function getUser(req) {
   if (!supabaseUrl || !supabaseAnonKey) {
-    // No Supabase configured — return a mock user for local dev
-    return { user: { id: 'local-dev-user' }, error: null };
+    return { user: null, error: 'Supabase not configured' };
   }
 
-  // Try Authorization header first
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  if (!token) {
-    // Try cookie-based auth
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { cookie: req.headers.cookie || '' } },
-    });
-    const { data: { user }, error } = await supabase.auth.getUser();
+  if (token) {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
     return { user, error };
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { cookie: req.headers.cookie || '' } },
+  });
+  const { data: { user }, error } = await supabase.auth.getUser();
   return { user, error };
 }
 
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
   }
 
   // Authenticate
-  const { user, error: authError } = await getUser(req);
+  const { user } = await getUser(req);
   if (!user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -69,28 +70,49 @@ export default async function handler(req, res) {
 
   const userId = user.id;
 
-  // Resolve the user's agent ID from their profile (if provisioned)
-  let agentId = null;
-  if (supabaseUrl && supabaseAnonKey && userId !== 'anonymous') {
+  // Resolve agent ID from profile
+  let agentId = 'main';
+  if (supabaseUrl) {
     try {
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (serviceKey) {
         const db = createClient(supabaseUrl, serviceKey);
         const { data: profile } = await db
           .from('profiles')
-          .select('openclaw_agent_id, agent_provisioned')
+          .select('openclaw_agent_id')
           .eq('id', userId)
           .single();
-        if (profile?.agent_provisioned && profile?.openclaw_agent_id) {
+        if (profile?.openclaw_agent_id) {
           agentId = profile.openclaw_agent_id;
         }
       }
     } catch (e) {
-      console.warn('[chat] Profile lookup failed (non-blocking):', e.message);
+      console.warn('[chat] Profile lookup failed:', e.message);
     }
   }
 
-  const sessionKey = explicitSessionKey || openclaw.sessionKeyForUser(userId, agentId);
+  // Build messages array
+  const messages = [];
+  if (instructions && typeof instructions === 'string' && instructions.trim()) {
+    messages.push({ role: 'system', content: instructions.trim() });
+  }
+  messages.push({ role: 'user', content: message.trim() });
+
+  // Build session key for the header
+  const sessionKey = explicitSessionKey || `agent:${agentId}:web:${userId}`;
+
+  const httpUrl = gatewayHttpUrl();
+  if (!httpUrl) {
+    // Mock mode — no gateway configured
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+    });
+    res.write(`data: ${JSON.stringify({ state: 'delta', message: 'OpenClaw gateway is not configured. This is a mock response.' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ state: 'final', message: 'OpenClaw gateway is not configured. This is a mock response.' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ state: 'done' })}\n\n`);
+    return res.end();
+  }
 
   // Set up SSE headers
   res.writeHead(200, {
@@ -100,52 +122,66 @@ export default async function handler(req, res) {
     'X-Accel-Buffering': 'no',
   });
 
-  // Helper to send SSE event
-  function sendSSE(data) {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  }
-
-  // Track if the connection is still open
   let closed = false;
   req.on('close', () => { closed = true; });
 
-  // Prepend project instructions if provided
-  const fullMessage = instructions && typeof instructions === 'string' && instructions.trim()
-    ? `[System Context: ${instructions.trim()}]\n\nUser: ${message.trim()}`
-    : message.trim();
-
   try {
-    await openclaw.sendMessageStream(sessionKey, fullMessage, (event) => {
-      if (closed) return;
-      // Normalize: gateway sends message as {role, content} object,
-      // but frontend expects message as a plain string
-      const normalized = { ...event };
-      if (normalized.message && typeof normalized.message === 'object') {
-        normalized.message = normalized.message.content || '';
-      }
-      sendSSE(normalized);
+    // Call the OpenAI-compatible HTTP endpoint on the gateway
+    const completionUrl = `${httpUrl}/v1/chat/completions`;
+    console.log('[chat] Calling:', completionUrl, 'agent:', agentId);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
+    const gatewayResp = await fetch(completionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+        'x-openclaw-agent-id': agentId,
+        'x-openclaw-session-key': sessionKey,
+      },
+      body: JSON.stringify({
+        model: `openclaw:${agentId}`,
+        messages,
+        stream: false,
+      }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
+
+    if (!gatewayResp.ok) {
+      const errText = await gatewayResp.text();
+      console.error('[chat] Gateway error:', gatewayResp.status, errText);
+      if (!closed) {
+        res.write(`data: ${JSON.stringify({ state: 'error', errorMessage: `Gateway error: ${gatewayResp.status}` })}\n\n`);
+      }
+    } else {
+      const data = await gatewayResp.json();
+      const content = data.choices?.[0]?.message?.content || '';
+
+      if (!closed) {
+        // Send as delta then final (frontend expects this pattern)
+        res.write(`data: ${JSON.stringify({ state: 'delta', message: content })}\n\n`);
+        res.write(`data: ${JSON.stringify({ state: 'final', message: content })}\n\n`);
+      }
+    }
   } catch (err) {
+    console.error('[chat] Error:', err.message);
     if (!closed) {
-      sendSSE({
-        state: 'error',
-        errorMessage: err.message || 'Unknown error',
-      });
+      res.write(`data: ${JSON.stringify({ state: 'error', errorMessage: err.message || 'Unknown error' })}\n\n`);
     }
   }
 
   if (!closed) {
-    // Send a final done marker
-    sendSSE({ state: 'done' });
+    res.write(`data: ${JSON.stringify({ state: 'done' })}\n\n`);
     res.end();
   }
 }
 
-// Disable body parsing limit for streaming
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
+    bodyParser: { sizeLimit: '1mb' },
   },
 };
