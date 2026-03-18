@@ -11,7 +11,7 @@
     "@elevenlabs/client": "^0.15.2",
     "@elevenlabs/react": "^0.14.3",
     "@supabase/supabase-js": "^2.39.0",
-    "next": "^13.5.0",
+    "next": "^16.1.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "ws": "^8.19.0"
