@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
+import DiscoveryBanner from '../components/DiscoveryBanner';
+import AchievementTracker from '../components/AchievementTracker';
+import { unlockAchievement } from '../components/AchievementTracker';
 
 export default function Workspace() {
   const router = useRouter();
@@ -67,6 +70,7 @@ export default function Workspace() {
   // Send message via SSE
   const send = async () => {
     if (!msg.trim() || loading) return;
+    unlockAchievement('first-chat');
     const userMsg = { role: 'user', text: msg };
     setLogs(l => [...l, userMsg]);
     const currentMsg = msg;
@@ -197,6 +201,7 @@ export default function Workspace() {
   // Session management
   const createNewSession = async () => {
     const newKey = `agent:${agentPrefix}:web:${userId}:${Date.now()}`;
+    unlockAchievement('multiple-sessions');
     try {
       await fetch('/api/sessions', {
         method: 'POST',
@@ -334,6 +339,9 @@ export default function Workspace() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-6 min-w-0">
+        {/* Discovery Banner */}
+        <DiscoveryBanner />
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -351,9 +359,14 @@ export default function Workspace() {
               <p className="text-dark-400 text-sm">Your OpenClaw agent session</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-            <span className="text-dark-400 text-sm">Agent Online</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block w-48">
+              <AchievementTracker />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+              <span className="text-dark-400 text-sm">Agent Online</span>
+            </div>
           </div>
         </div>
 

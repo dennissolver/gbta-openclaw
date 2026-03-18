@@ -212,6 +212,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Discovery Coach */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="card max-w-4xl mx-auto text-center bg-gradient-to-br from-brand-500/5 via-dark-900 to-dark-900 border-brand-500/20">
+          <div className="text-4xl mb-4">{'\ud83c\udfaf'}</div>
+          <h2 className="text-3xl font-bold text-white mb-4">Discovery Coach</h2>
+          <p className="text-dark-300 text-lg mb-8 max-w-xl mx-auto">
+            Not sure where to start? Our AI coach will interview you about your workflow
+            and recommend the best automations for your needs.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/discover" className="btn-primary text-lg px-8 py-3">
+              Start Text Discovery
+            </Link>
+            <Link href="/discover?mode=voice" className="btn-secondary text-lg px-8 py-3">
+              <span className="flex items-center gap-2 justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                Start Voice Discovery
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="card text-center bg-gradient-to-br from-dark-900 to-dark-800 border-brand-500/20">

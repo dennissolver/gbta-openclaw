@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/templates', label: 'Templates' },
   { href: '/projects', label: 'Projects', auth: true },
   { href: '/workspace', label: 'Workspace', auth: true },
+  { href: '/discover', label: 'Discover' },
   { href: '/functions', label: 'Functions' },
 ];
 

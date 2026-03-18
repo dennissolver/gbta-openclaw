@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../lib/auth';
+import DiscoveryBanner from '../../components/DiscoveryBanner';
+import AchievementTracker from '../../components/AchievementTracker';
+import { unlockAchievement } from '../../components/AchievementTracker';
 
 const TEMPLATES = [
   {
@@ -169,6 +172,10 @@ export default function ProjectsIndex() {
 
       if (resp.ok) {
         const data = await resp.json();
+        unlockAchievement('project-created');
+        if (body.instructions && body.instructions.trim()) {
+          unlockAchievement('custom-instructions');
+        }
         // Navigate to the new project
         router.push(`/projects/${data.project.id}`);
       }
@@ -180,6 +187,7 @@ export default function ProjectsIndex() {
   };
 
   const createFromTemplate = (template) => {
+    unlockAchievement('template-used');
     createProject({
       name: template.name,
       description: template.description,
@@ -243,6 +251,9 @@ export default function ProjectsIndex() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Discovery Banner */}
+      <DiscoveryBanner />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -251,9 +262,14 @@ export default function ProjectsIndex() {
             Organized workspaces with custom instructions, pinned functions, and sessions.
           </p>
         </div>
-        <button onClick={() => setShowCreate(!showCreate)} className="btn-primary">
-          + Create Project
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:block w-56">
+            <AchievementTracker />
+          </div>
+          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary">
+            + Create Project
+          </button>
+        </div>
       </div>
 
       {/* Create Project Form */}
