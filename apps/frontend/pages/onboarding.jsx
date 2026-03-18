@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth';
 
@@ -74,18 +74,22 @@ export default function Onboarding() {
   const [selectedChannels, setSelectedChannels] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState(['email-manager', 'research']);
 
-  // Skip to correct step based on auth/onboarding state
+  // Skip to correct step based on auth/onboarding state (only on initial load)
+  const initialStepSet = useRef(false);
   useEffect(() => {
-    if (loading) return;
+    if (loading || initialStepSet.current) return;
     if (user && profile?.onboarding_completed) {
       router.replace('/workspace');
     } else if (user && profile) {
-      // Logged in but not onboarded — skip auth step
+      initialStepSet.current = true;
       if (profile.risk_accepted) {
         setStep(2); // skip to AI tier
       } else {
         setStep(1); // risk step
       }
+    } else if (user) {
+      initialStepSet.current = true;
+      setStep(1); // logged in but no profile yet
     }
   }, [user, profile, loading]);
 
