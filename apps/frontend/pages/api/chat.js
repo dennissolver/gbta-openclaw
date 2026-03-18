@@ -162,9 +162,26 @@ export default async function handler(req, res) {
       const content = data.choices?.[0]?.message?.content || '';
 
       if (!closed) {
-        // Send as delta then final (frontend expects this pattern)
         res.write(`data: ${JSON.stringify({ state: 'delta', message: content })}\n\n`);
         res.write(`data: ${JSON.stringify({ state: 'final', message: content })}\n\n`);
+      }
+
+      // Persist messages to Supabase
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseUrl && serviceKey && content) {
+        try {
+          const db = createClient(supabaseUrl, serviceKey);
+          // Extract project_id from session key if present
+          const projectMatch = sessionKey.match(/project:([^:]+)/);
+          const projectId = projectMatch ? projectMatch[1] : null;
+
+          await db.from('chat_messages').insert([
+            { user_id: userId, session_key: sessionKey, project_id: projectId, role: 'user', content: message.trim() },
+            { user_id: userId, session_key: sessionKey, project_id: projectId, role: 'assistant', content },
+          ]);
+        } catch (dbErr) {
+          console.warn('[chat] Failed to persist messages:', dbErr.message);
+        }
       }
     }
   } catch (err) {

@@ -1,32 +1,30 @@
 /**
- * GET /api/history?sessionKey=...&limit=50 — Fetch chat history for a session
+ * GET /api/history?sessionKey=...&limit=50 — Fetch chat history from Supabase
  */
 
 import { createClient } from '@supabase/supabase-js';
-
-const openclaw = require('../../lib/openclaw-client');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 async function getUser(req) {
   if (!supabaseUrl || !supabaseAnonKey) {
-    return { user: { id: 'local-dev-user' }, error: null };
+    return { user: null, error: 'Supabase not configured' };
   }
 
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  if (!token) {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { cookie: req.headers.cookie || '' } },
-    });
-    const { data: { user }, error } = await supabase.auth.getUser();
+  if (token) {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
     return { user, error };
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { cookie: req.headers.cookie || '' } },
+  });
+  const { data: { user }, error } = await supabase.auth.getUser();
   return { user, error };
 }
 
@@ -48,17 +46,36 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'sessionKey query parameter is required' });
   }
 
-  // Verify the session belongs to this user
-  const userPrefix = `agent:main:web:${userId}`;
-  if (!sessionKey.startsWith(userPrefix)) {
-    return res.status(403).json({ error: 'Forbidden' });
+  // Read from Supabase
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) {
+    return res.json({ messages: [] });
   }
 
   try {
-    const result = await openclaw.getHistory(sessionKey, parseInt(limit, 10));
-    return res.json(result);
+    const db = createClient(supabaseUrl, serviceKey);
+    const { data, error } = await db
+      .from('chat_messages')
+      .select('role, content, created_at')
+      .eq('session_key', sessionKey)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(parseInt(limit, 10));
+
+    if (error) {
+      console.error('[history] Supabase error:', error.message);
+      return res.json({ messages: [] });
+    }
+
+    const messages = (data || []).map(m => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.created_at,
+    }));
+
+    return res.json({ messages });
   } catch (err) {
     console.error('[history] Error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.json({ messages: [] });
   }
 }
