@@ -244,9 +244,15 @@ export default function Home() {
           <p className="text-dark-300 text-lg mb-8 max-w-xl mx-auto">
             Launch your GBTA-configured OpenClaw agent in minutes. Pre-loaded with curated skills and templates.
           </p>
-          <Link href={launchHref} className="btn-primary text-lg px-10 py-3">
-            Launch Your Agent
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href={launchHref} className="btn-primary text-lg px-10 py-3">
+              Launch Your Agent
+            </Link>
+            <Link href="/pricing" className="btn-secondary text-lg px-10 py-3">
+              View Pricing
+            </Link>
+          </div>
+          <p className="text-dark-500 text-sm mt-4">Starting at $0/month</p>
         </div>
       </section>
     </div>

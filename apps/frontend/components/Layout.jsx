@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/templates', label: 'Templates' },
   { href: '/projects', label: 'Projects', auth: true },
   { href: '/workspace', label: 'Workspace', auth: true },
