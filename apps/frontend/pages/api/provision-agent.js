@@ -78,73 +78,60 @@ export default async function handler(req, res) {
     }
   }
 
-  // Call VPS admin API to create the agent
-  const targetUrl = `${vpsAdminUrl}/agents/create`;
-  console.log('[provision-agent] Calling VPS:', targetUrl, 'agentId:', agentId);
+  // Provision: use shared 'main' agent for MVP
+  // Per-user agent isolation will be added once VPS networking is configured
+  const effectiveAgentId = 'main';
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    const vpsResp = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${vpsAdminToken}`,
-      },
-      body: JSON.stringify({
-        agentId,
-        model: 'openrouter/auto',
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    const vpsText = await vpsResp.text();
-    console.log('[provision-agent] VPS response:', vpsResp.status, vpsText);
-
-    let vpsData;
+  // Try VPS admin API for per-user agent (non-blocking, best-effort)
+  if (vpsAdminUrl && vpsAdminToken) {
     try {
-      vpsData = JSON.parse(vpsText);
-    } catch (parseErr) {
-      console.error('[provision-agent] VPS response not JSON:', vpsText);
-      return res.status(502).json({ error: 'VPS returned invalid response', detail: vpsText.slice(0, 200) });
-    }
-
-    if (!vpsResp.ok) {
-      console.error('[provision-agent] VPS API error:', vpsData);
-      return res.status(502).json({
-        error: 'Failed to provision agent on VPS',
-        detail: vpsData.error || 'Unknown VPS error',
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const vpsResp = await fetch(`${vpsAdminUrl}/agents/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${vpsAdminToken}`,
+        },
+        body: JSON.stringify({ agentId, model: 'openrouter/auto' }),
+        signal: controller.signal,
       });
-    }
-
-    // Update Supabase profile
-    if (db) {
-      try {
-        await db
-          .from('profiles')
-          .update({
+      clearTimeout(timeout);
+      if (vpsResp.ok) {
+        console.log('[provision-agent] Per-user agent created on VPS:', agentId);
+        // Use the per-user agent if VPS provisioning succeeded
+        if (db) {
+          await db.from('profiles').update({
             openclaw_agent_id: agentId,
             agent_provisioned: true,
             agent_provisioned_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          })
-          .eq('id', userId);
-      } catch (e) {
-        console.warn('[provision-agent] Profile update failed (non-blocking):', e.message);
+          }).eq('id', userId);
+        }
+        return res.json({ agentId, status: 'provisioned' });
       }
+    } catch (vpsErr) {
+      console.warn('[provision-agent] VPS unreachable, falling back to shared agent:', vpsErr.message);
     }
-
-    return res.json({
-      agentId,
-      status: 'provisioned',
-    });
-  } catch (err) {
-    console.error('[provision-agent] Error:', err.name, err.message, 'VPS URL:', vpsAdminUrl);
-    return res.status(500).json({
-      error: 'Failed to provision agent. Please try again or contact support.',
-    });
   }
+
+  // Fallback: mark as provisioned with shared 'main' agent
+  if (db) {
+    try {
+      await db.from('profiles').update({
+        openclaw_agent_id: effectiveAgentId,
+        agent_provisioned: true,
+        agent_provisioned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', userId);
+    } catch (e) {
+      console.warn('[provision-agent] Profile update failed (non-blocking):', e.message);
+    }
+  }
+
+  return res.json({
+    agentId: effectiveAgentId,
+    status: 'provisioned',
+    shared: true,
+  });
 }
