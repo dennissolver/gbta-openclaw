@@ -1,38 +1,87 @@
-import React, { useState } from 'react';
-// Using native fetch — no axios dependency needed
+import React, { useState, useRef } from 'react';
 
 export default function ChatPanel({ onPatchGenerated }) {
   const [msg, setMsg] = useState('');
-  const [logs, setLogs] = useState([{ role: 'system', text: 'Welcome to OpenClaw. Type a message to invoke a function.' }]);
+  const [logs, setLogs] = useState([{ role: 'system', text: 'Welcome to OpenClaw. Type a message to talk to the agent.' }]);
   const [loading, setLoading] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const abortRef = useRef(null);
 
   const send = async () => {
-    if (!msg.trim()) return;
+    if (!msg.trim() || loading) return;
     const userMsg = { role: 'user', text: msg };
     setLogs(l => [...l, userMsg]);
+    const currentMsg = msg;
     setMsg('');
     setLoading(true);
+    setStreamingText('');
+
+    const abortController = new AbortController();
+    abortRef.current = abortController;
 
     try {
-      const resp = await fetch('/api/invoke', {
+      const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          functionName: 'generatePatchSkeleton',
-          inputs: {
-            urls: ['https://buy.nsw.gov.au/login', 'https://buy.nsw.gov.au/login/signup'],
-            targetDir: 'workspace/nsw',
-          },
-        }),
+        body: JSON.stringify({ message: currentMsg }),
+        signal: abortController.signal,
       });
-      const data = await resp.json();
-      const out = data.outputs?.patch || JSON.stringify(data.outputs);
-      setLogs(l => [...l, { role: 'assistant', text: out }]);
-      if (onPatchGenerated) onPatchGenerated(data.outputs);
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let event;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.state === 'delta' && event.message) {
+            accumulated += event.message;
+            setStreamingText(accumulated);
+          } else if (event.state === 'final') {
+            const finalText = event.message || accumulated;
+            setStreamingText('');
+            setLogs(l => [...l, { role: 'assistant', text: finalText }]);
+            if (onPatchGenerated) onPatchGenerated({ text: finalText });
+          } else if (event.state === 'error') {
+            setStreamingText('');
+            setLogs(l => [...l, { role: 'assistant', text: `Error: ${event.errorMessage || 'Unknown error'}` }]);
+          }
+        }
+      }
+
+      if (accumulated && streamingText) {
+        setStreamingText('');
+        setLogs(l => {
+          const last = l[l.length - 1];
+          if (last?.role === 'assistant' && last?.text === accumulated) return l;
+          return [...l, { role: 'assistant', text: accumulated }];
+        });
+      }
     } catch (e) {
-      setLogs(l => [...l, { role: 'assistant', text: `Error: ${e.message}` }]);
+      if (e.name !== 'AbortError') {
+        setStreamingText('');
+        setLogs(l => [...l, { role: 'assistant', text: `Error: ${e.message}` }]);
+      }
     } finally {
       setLoading(false);
+      setStreamingText('');
+      abortRef.current = null;
     }
   };
 
@@ -53,12 +102,17 @@ export default function ChatPanel({ onPatchGenerated }) {
           <div key={i} style={{
             marginBottom: 8, padding: 6, borderRadius: 4,
             background: m.role === 'user' ? '#e8f0fe' : m.role === 'system' ? '#f5f5f5' : '#f0fdf4',
-            textAlign: m.role === 'user' ? 'left' : 'left',
           }}>
             <strong style={{ fontSize: 12, textTransform: 'uppercase', color: '#666' }}>{m.role}</strong>
             <div style={{ marginTop: 2, whiteSpace: 'pre-wrap' }}>{m.text}</div>
           </div>
         ))}
+        {streamingText && (
+          <div style={{ marginBottom: 8, padding: 6, borderRadius: 4, background: '#f0fdf4' }}>
+            <strong style={{ fontSize: 12, textTransform: 'uppercase', color: '#666' }}>assistant</strong>
+            <div style={{ marginTop: 2, whiteSpace: 'pre-wrap' }}>{streamingText}</div>
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
@@ -69,14 +123,15 @@ export default function ChatPanel({ onPatchGenerated }) {
           placeholder="Ask OpenClaw..."
         />
         <button
-          onClick={send}
-          disabled={loading}
+          onClick={loading ? () => abortRef.current?.abort() : send}
+          disabled={!loading && !msg.trim()}
           style={{
-            padding: '8px 20px', background: loading ? '#ccc' : '#0070f3',
+            padding: '8px 20px',
+            background: loading ? '#dc2626' : '#0070f3',
             color: '#fff', border: 'none', borderRadius: 4,
           }}
         >
-          {loading ? 'Working...' : 'Send'}
+          {loading ? 'Stop' : 'Send'}
         </button>
       </div>
     </div>
