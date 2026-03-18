@@ -110,45 +110,61 @@ export default function Onboarding() {
   };
 
   const handleRiskAccept = async () => {
-    await updateProfile({
-      risk_accepted: true,
-      risk_accepted_at: new Date().toISOString(),
-    });
+    try {
+      await updateProfile({
+        risk_accepted: true,
+        risk_accepted_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn('Profile update failed (non-blocking):', e);
+    }
     setStep(2);
   };
 
   const handleAiTier = async () => {
-    await updateProfile({ ai_tier: aiTier });
+    try {
+      await updateProfile({ ai_tier: aiTier });
+    } catch (e) {
+      console.warn('Profile update failed (non-blocking):', e);
+    }
     setStep(3);
   };
 
   const handleChannels = async () => {
-    if (supabase && user) {
-      for (const ch of selectedChannels) {
-        await supabase.from('user_channels').upsert({
-          user_id: user.id,
-          platform: ch,
-          connected: false,
-        }, { onConflict: 'user_id,platform' });
+    try {
+      if (supabase && user) {
+        for (const ch of selectedChannels) {
+          await supabase.from('user_channels').upsert({
+            user_id: user.id,
+            platform: ch,
+            connected: false,
+          }, { onConflict: 'user_id,platform' });
+        }
       }
+    } catch (e) {
+      console.warn('Channel save failed (non-blocking):', e);
     }
     setStep(4);
   };
 
   const handleSkills = async () => {
-    if (supabase && user) {
-      for (const skill of selectedSkills) {
-        await supabase.from('user_skills').upsert({
-          user_id: user.id,
-          skill_bundle: skill,
-          enabled: true,
-        }, { onConflict: 'user_id,skill_bundle' });
+    try {
+      if (supabase && user) {
+        for (const skill of selectedSkills) {
+          await supabase.from('user_skills').upsert({
+            user_id: user.id,
+            skill_bundle: skill,
+            enabled: true,
+          }, { onConflict: 'user_id,skill_bundle' });
+        }
       }
+      await updateProfile({
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn('Profile update failed (non-blocking):', e);
     }
-    await updateProfile({
-      onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
-    });
     router.push('/workspace');
   };
 
