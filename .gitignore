@@ -9,3 +9,4 @@ dist/
 .idea/
 .venv/
 __pycache__/
+integrations/ghl/.env
