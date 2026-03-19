@@ -1,0 +1,377 @@
+{
+  "version": "2.0",
+  "project_name": "EasyOpenClaw",
+  "description": "A user-friendly SaaS wrapper for OpenClaw autonomous AI agent that simplifies AI automation through a web-based interface, providing enterprise features like user isolation, voice interaction, and template-based workflows for businesses and professionals.",
+  "tech_stack": {
+    "framework": "Next.js",
+    "language": "JavaScript",
+    "database": "PostgreSQL",
+    "auth": "Supabase Auth",
+    "deployment": "Vercel",
+    "package_manager": "npm",
+    "services": [
+      "Supabase",
+      "ElevenLabs"
+    ]
+  },
+  "industry": {
+    "primary": "DevTools",
+    "secondary": [
+      "B2B",
+      "SaaS",
+      "API-first",
+      "Enterprise"
+    ],
+    "confidence": 0.9,
+    "evidence": [
+      "README describes 'wrapper around OpenClaw, the open-source autonomous AI agent' indicating developer tooling",
+      "Architecture shows API routes (/api/invoke, /api/functions) suggesting developer-focused infrastructure",
+      "Documentation includes API contracts with technical endpoints for function invocation and management",
+      "Built by 'Corporate AI Solutions' targeting business/enterprise developers",
+      "Technical components like FunctionRegistry, PatchGenerator, and InvocationEngine indicate developer automation tools"
+    ]
+  },
+  "current_growth_features": [
+    {
+      "feature_name": "User Authentication & Profile Management",
+      "file_path": "apps/frontend/lib/auth.jsx",
+      "detected_intent": "User onboarding and account management with persistent authentication",
+      "confidence_score": 0.9,
+      "entry_point": "/onboarding",
+      "growth_potential": [
+        "Add social login (Google, GitHub) for faster signup",
+        "Implement referral tracking in user profiles",
+        "Add user analytics to track onboarding completion rates",
+        "Create welcome email sequences for new users"
+      ],
+      "growth_pillars": [
+        "onboarding"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Comprehensive Onboarding Flow",
+      "file_path": "apps/frontend/pages/onboarding.jsx",
+      "detected_intent": "Multi-step guided onboarding to configure AI preferences, channels, and skills",
+      "confidence_score": 1.0,
+      "entry_point": "/onboarding",
+      "growth_potential": [
+        "Add progress saving to prevent user dropout",
+        "Implement A/B testing for onboarding steps",
+        "Add tutorial tooltips and contextual help",
+        "Create personalized onboarding paths based on user role"
+      ],
+      "growth_pillars": [
+        "onboarding",
+        "engagement"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Tiered Pricing Model",
+      "file_path": "apps/frontend/pages/pricing.jsx",
+      "detected_intent": "Freemium monetization strategy with clear upgrade paths",
+      "confidence_score": 1.0,
+      "entry_point": "/pricing",
+      "growth_potential": [
+        "Add usage tracking and upgrade prompts when limits are reached",
+        "Implement free trial for Pro tier",
+        "Create annual pricing discounts",
+        "Add enterprise sales funnel for Business tier"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Discovery Coach with Voice Support",
+      "file_path": "apps/frontend/pages/discover.jsx",
+      "detected_intent": "Interactive onboarding that recommends automations based on user workflow",
+      "confidence_score": 0.9,
+      "entry_point": "/discover",
+      "growth_potential": [
+        "Add sharing of discovery session results",
+        "Create templates based on common discovery patterns",
+        "Implement discovery session analytics",
+        "Add follow-up scheduling for incomplete sessions"
+      ],
+      "growth_pillars": [
+        "onboarding",
+        "engagement"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Achievement System",
+      "file_path": "apps/frontend/components/AchievementTracker.jsx",
+      "detected_intent": "Gamification to drive user engagement and feature discovery",
+      "confidence_score": 0.8,
+      "entry_point": "unlockAchievement() function calls",
+      "growth_potential": [
+        "Add achievement sharing to social media",
+        "Create achievement-based rewards or discounts",
+        "Implement leaderboards for team accounts",
+        "Add progressive achievement chains"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Project Management System",
+      "file_path": "apps/frontend/pages/api/projects.js",
+      "detected_intent": "Organize user work into projects for better engagement and retention",
+      "confidence_score": 0.8,
+      "entry_point": "/api/projects",
+      "growth_potential": [
+        "Add project templates sharing marketplace",
+        "Implement team collaboration features",
+        "Create project analytics and insights",
+        "Add project export/import functionality"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Session Management & History",
+      "file_path": "apps/frontend/pages/api/sessions.js",
+      "detected_intent": "Persistent conversation history to improve user experience and retention",
+      "confidence_score": 0.7,
+      "entry_point": "/api/sessions",
+      "growth_potential": [
+        "Add session sharing capabilities",
+        "Implement session search functionality",
+        "Create session analytics for usage insights",
+        "Add session templates and favorites"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Agent Provisioning System",
+      "file_path": "apps/frontend/pages/api/provision-agent.js",
+      "detected_intent": "Automated infrastructure provisioning to reduce onboarding friction",
+      "confidence_score": 0.8,
+      "entry_point": "/api/provision-agent",
+      "growth_potential": [
+        "Add provisioning status notifications",
+        "Implement agent health monitoring",
+        "Create agent performance analytics",
+        "Add agent backup and restore features"
+      ],
+      "growth_pillars": [
+        "onboarding",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Discovery Banner with Tips",
+      "file_path": "apps/frontend/components/DiscoveryBanner.jsx",
+      "detected_intent": "Progressive feature discovery through contextual tips and suggestions",
+      "confidence_score": 0.7,
+      "entry_point": "DiscoveryBanner component",
+      "growth_potential": [
+        "Implement smart tip targeting based on user behavior",
+        "Add tip effectiveness tracking",
+        "Create personalized tip sequences",
+        "Add tip sharing and community suggestions"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    },
+    {
+      "feature_name": "Chat API with Streaming",
+      "file_path": "apps/frontend/pages/api/chat.js",
+      "detected_intent": "Real-time AI interactions with rate limiting and user authentication",
+      "confidence_score": 0.9,
+      "entry_point": "/api/chat",
+      "growth_potential": [
+        "Add conversation analytics and insights",
+        "Implement chat export functionality",
+        "Create conversation sharing features",
+        "Add usage analytics for pricing optimization"
+      ],
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ],
+      "loop_ids": []
+    }
+  ],
+  "growth_opportunities": [
+    {
+      "feature_name": "User Analytics Dashboard",
+      "description": "Missing comprehensive analytics for tracking user behavior, feature adoption, and usage patterns. This would provide insights for product optimization and support data-driven growth decisions.",
+      "priority": "high",
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ]
+    },
+    {
+      "feature_name": "Social Sharing & Viral Features",
+      "description": "No sharing mechanisms for project results, achievements, or automation outcomes. Adding share functionality could drive organic user acquisition through social proof.",
+      "priority": "high",
+      "growth_pillars": [
+        "engagement"
+      ]
+    },
+    {
+      "feature_name": "Team Collaboration Features",
+      "description": "Missing team workspace functionality for sharing projects, agents, and collaboration on automation workflows. This could significantly increase user retention and expand account value.",
+      "priority": "medium",
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ]
+    },
+    {
+      "feature_name": "Marketplace for Automation Templates",
+      "description": "No community marketplace for sharing and discovering pre-built automation templates. This could reduce onboarding friction and create network effects.",
+      "priority": "medium",
+      "growth_pillars": [
+        "onboarding",
+        "engagement"
+      ]
+    },
+    {
+      "feature_name": "Usage Limits & Upgrade Prompts",
+      "description": "Missing clear usage tracking and conversion prompts when free tier limits are reached. This represents potential revenue leakage from users who might upgrade if properly prompted.",
+      "priority": "high",
+      "growth_pillars": [
+        "engagement",
+        "retention"
+      ]
+    },
+    {
+      "feature_name": "Email Marketing Integration",
+      "description": "No automated email sequences for user engagement, feature announcements, or re-activation campaigns. This could improve user retention and feature adoption.",
+      "priority": "medium",
+      "growth_pillars": [
+        "onboarding",
+        "retention"
+      ]
+    },
+    {
+      "feature_name": "API Documentation & Developer Portal",
+      "description": "Missing comprehensive API documentation for developers who want to integrate or extend the platform. This could attract developer users and create integration partnerships.",
+      "priority": "medium",
+      "growth_pillars": [
+        "engagement"
+      ]
+    },
+    {
+      "feature_name": "Performance Monitoring & Health Checks",
+      "description": "No system for monitoring agent performance, uptime, or user satisfaction metrics. This could prevent churn and improve user experience.",
+      "priority": "high",
+      "growth_pillars": [
+        "retention"
+      ]
+    }
+  ],
+  "revenue_leakage": [
+    {
+      "issue": "Free tier users may not hit clear usage limits that prompt upgrades",
+      "file_path": "apps/frontend/pages/pricing.jsx",
+      "impact": "high",
+      "recommendation": "Implement usage tracking and proactive upgrade prompts when limits are approached"
+    },
+    {
+      "issue": "No trial period for Pro tier reduces conversion opportunities",
+      "file_path": "apps/frontend/pages/pricing.jsx",
+      "impact": "medium",
+      "recommendation": "Add 14-day free trial for Pro tier to let users experience premium features"
+    },
+    {
+      "issue": "Missing enterprise sales funnel for high-value accounts",
+      "file_path": null,
+      "impact": "high",
+      "recommendation": "Create enterprise contact form and sales process for Business tier prospects"
+    }
+  ],
+  "generated_at": "2026-03-19T21:30:54.643203",
+  "product_overview": {
+    "tagline": "User-friendly wrapper for OpenClaw autonomous AI agent",
+    "value_proposition": "EasyOpenClaw simplifies AI automation by providing a web-based interface, onboarding flow, and project management layer around the open-source OpenClaw agent. It eliminates technical complexity while adding enterprise features like user isolation, voice interaction, and template-based workflows.",
+    "target_audience": "Businesses and professionals who want AI automation without technical setup - including marketers, content creators, researchers, and teams needing automated workflows"
+  },
+  "features": [
+    {
+      "name": "User Authentication & Profile Management",
+      "description": "Sign up, sign in, and manage user profiles with email/password authentication powered by Supabase.",
+      "file_path": "apps/frontend/lib/auth.jsx",
+      "usage_example": "const { user, signIn, signOut, updateProfile } = useAuth();",
+      "category": "Authentication"
+    },
+    {
+      "name": "AI Agent Workspace",
+      "description": "Interactive chat interface to communicate with your personal AI agent, featuring session management and real-time streaming responses.",
+      "file_path": "apps/frontend/pages/workspace.jsx",
+      "usage_example": "Send messages to your agent and get intelligent responses for task automation and assistance.",
+      "category": "AI"
+    },
+    {
+      "name": "Discovery Session",
+      "description": "Interactive interview with an AI coach to analyze your workflow and automatically recommend personalized automation projects.",
+      "file_path": "apps/frontend/pages/discover.jsx",
+      "usage_example": "Answer questions about your daily tasks to receive tailored project recommendations.",
+      "category": "AI"
+    },
+    {
+      "name": "Multi-Channel Integration Setup",
+      "description": "Connect your AI agent to various messaging platforms including WhatsApp, Telegram, Slack, Discord, Teams, and email.",
+      "file_path": "apps/frontend/pages/onboarding.jsx",
+      "usage_example": "Select channels like WhatsApp or Slack during onboarding to receive AI responses on your preferred platforms.",
+      "category": "Integrations"
+    },
+    {
+      "name": "Project Management",
+      "description": "Create and manage automation projects with custom instructions and skill bundles for specific workflows.",
+      "file_path": "apps/frontend/pages/api/projects.js",
+      "usage_example": "Create projects like 'Email Manager' or 'Daily Briefings' with specific AI instructions and capabilities.",
+      "category": "Data Management"
+    },
+    {
+      "name": "Tiered Pricing Plans",
+      "description": "Flexible pricing options from Free to Business tier with different AI model capabilities and feature access.",
+      "file_path": "apps/frontend/pages/pricing.jsx",
+      "usage_example": "Choose between Fast, Balanced, or Premium AI tiers based on your automation needs and budget.",
+      "category": "Business"
+    },
+    {
+      "name": "Agent Memory & File Management",
+      "description": "Your AI agent maintains persistent memory and can create, read, and manage files in its dedicated workspace.",
+      "file_path": "apps/frontend/pages/api/agent-memory.js",
+      "usage_example": "Agent remembers past conversations and can access files it has created or you've shared.",
+      "category": "Data Management"
+    },
+    {
+      "name": "Voice Discovery Coach",
+      "description": "Speak with an AI coach using natural voice conversation to discover automation opportunities hands-free.",
+      "file_path": "apps/frontend/pages/discover.jsx",
+      "usage_example": "Switch to voice mode for a natural conversation about your workflow and automation needs.",
+      "category": "AI"
+    },
+    {
+      "name": "Achievement & Progress Tracking",
+      "description": "Track your progress exploring AI capabilities with visual achievement badges and completion metrics.",
+      "file_path": "apps/frontend/components/AchievementTracker.jsx",
+      "usage_example": "Unlock achievements like 'First Chat', 'Project Created', or 'Discovery Completed' as you use the platform.",
+      "category": "UI"
+    }
+  ]
+}

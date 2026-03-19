@@ -1,0 +1,387 @@
+{
+  "title": "AI SaaS DevTools PLG Framework",
+  "description": "Product-Led Growth framework designed for AI automation SaaS platforms targeting developers and businesses, tracking the journey from discovery to enterprise expansion",
+  "version": "1.0.0",
+  "framework": "AI_DEVTOOLS_PLG",
+  "lifecycles": [
+    {
+      "name": "DISCOVERY",
+      "description": "The Hook",
+      "order_index": 1,
+      "milestones": [
+        {
+          "title": "Landing Page Engagement",
+          "description": "User visits landing page and shows initial interest through scrolling, video watching, or demo interaction",
+          "order_index": 1
+        },
+        {
+          "title": "Problem Recognition",
+          "description": "User identifies with automation pain points and recognizes value proposition through content or pricing page visit",
+          "order_index": 2
+        },
+        {
+          "title": "Social Proof Validation",
+          "description": "User engages with testimonials, case studies, or community content to validate solution credibility",
+          "order_index": 3
+        },
+        {
+          "title": "Sign-Up Intent",
+          "description": "User clicks sign-up or starts registration process, indicating intent to try the platform",
+          "order_index": 4
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Traffic to Sign-up Conversion Rate",
+          "howToMeasure": "Percentage of website visitors who start the registration process",
+          "healthyBenchmark": "> 2.5%"
+        },
+        {
+          "name": "Pricing Page Engagement Rate",
+          "howToMeasure": "Percentage of visitors who view pricing page from landing page",
+          "healthyBenchmark": "> 15%"
+        },
+        {
+          "name": "Demo Video Completion Rate",
+          "howToMeasure": "Percentage of users who watch demo video to completion",
+          "healthyBenchmark": "> 40%"
+        },
+        {
+          "name": "Time on Landing Page",
+          "howToMeasure": "Average time spent on landing page before conversion or exit",
+          "healthyBenchmark": "> 90 seconds"
+        }
+      ]
+    },
+    {
+      "name": "ONBOARDING",
+      "description": "The Setup",
+      "order_index": 2,
+      "milestones": [
+        {
+          "title": "Account Creation",
+          "description": "User successfully completes registration and email verification with Supabase Auth",
+          "order_index": 1
+        },
+        {
+          "title": "Onboarding Flow Completion",
+          "description": "User completes the multi-step onboarding including AI preferences, channels, and skills configuration",
+          "order_index": 2
+        },
+        {
+          "title": "Agent Provisioning",
+          "description": "Personal AI agent is successfully provisioned and ready for interaction",
+          "order_index": 3
+        },
+        {
+          "title": "Discovery Session Participation",
+          "description": "User engages with the discovery coach to identify automation opportunities and receive recommendations",
+          "order_index": 4
+        },
+        {
+          "title": "First Project Creation",
+          "description": "User creates their first automation project based on discovery recommendations or manual setup",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Onboarding Completion Rate",
+          "howToMeasure": "Percentage of registered users who complete all onboarding steps within 7 days",
+          "healthyBenchmark": "> 70%"
+        },
+        {
+          "name": "Time to Agent Provisioning",
+          "howToMeasure": "Average time from account creation to successful agent provisioning",
+          "healthyBenchmark": "< 5 minutes"
+        },
+        {
+          "name": "Discovery Session Completion Rate",
+          "howToMeasure": "Percentage of users who complete the full discovery interview process",
+          "healthyBenchmark": "> 60%"
+        },
+        {
+          "name": "First Project Creation Rate",
+          "howToMeasure": "Percentage of users who create at least one project within 24 hours of onboarding",
+          "healthyBenchmark": "> 50%"
+        }
+      ]
+    },
+    {
+      "name": "ACTIVATION",
+      "description": "First Value",
+      "order_index": 3,
+      "milestones": [
+        {
+          "title": "First AI Interaction",
+          "description": "User successfully sends first message to AI agent and receives a meaningful response",
+          "order_index": 1
+        },
+        {
+          "title": "Multi-turn Conversation",
+          "description": "User engages in extended conversation with AI agent (5+ message exchanges) showing comfort with interface",
+          "order_index": 2
+        },
+        {
+          "title": "First Automation Success",
+          "description": "AI agent successfully completes a task or automation that provides clear value to the user",
+          "order_index": 3
+        },
+        {
+          "title": "Feature Discovery",
+          "description": "User explores additional features like voice interaction, file management, or channel integrations",
+          "order_index": 4
+        },
+        {
+          "title": "Achievement Unlock",
+          "description": "User unlocks their first achievement badge, indicating platform exploration and engagement",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "First Message Success Rate",
+          "howToMeasure": "Percentage of users who successfully send and receive first AI response within 48 hours",
+          "healthyBenchmark": "> 85%"
+        },
+        {
+          "name": "Time to First Value",
+          "howToMeasure": "Average time from account creation to first successful automation completion",
+          "healthyBenchmark": "< 2 hours"
+        },
+        {
+          "name": "Session Engagement Depth",
+          "howToMeasure": "Average number of messages per session in first week",
+          "healthyBenchmark": "> 8 messages"
+        },
+        {
+          "name": "Feature Adoption Rate",
+          "howToMeasure": "Percentage of activated users who try at least 2 different features",
+          "healthyBenchmark": "> 40%"
+        }
+      ]
+    },
+    {
+      "name": "ENGAGEMENT",
+      "description": "Habit Building",
+      "order_index": 4,
+      "milestones": [
+        {
+          "title": "Regular Usage Pattern",
+          "description": "User returns to platform at least 3 times per week for 2 consecutive weeks",
+          "order_index": 1
+        },
+        {
+          "title": "Multiple Project Creation",
+          "description": "User creates and manages 3+ different automation projects for various use cases",
+          "order_index": 2
+        },
+        {
+          "title": "Advanced Feature Adoption",
+          "description": "User utilizes advanced features like voice discovery, memory management, or custom skill bundles",
+          "order_index": 3
+        },
+        {
+          "title": "Integration Setup",
+          "description": "User successfully connects AI agent to external channels like WhatsApp, Slack, or email",
+          "order_index": 4
+        },
+        {
+          "title": "Workflow Optimization",
+          "description": "User iterates on projects, showing evidence of workflow refinement and platform mastery",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Weekly Active User Rate",
+          "howToMeasure": "Percentage of activated users who use platform at least once per week",
+          "healthyBenchmark": "> 60%"
+        },
+        {
+          "name": "Average Projects per User",
+          "howToMeasure": "Mean number of active projects created by engaged users",
+          "healthyBenchmark": "> 3 projects"
+        },
+        {
+          "name": "Feature Stickiness",
+          "howToMeasure": "Percentage of engaged users who use advanced features monthly",
+          "healthyBenchmark": "> 35%"
+        },
+        {
+          "name": "Session Frequency",
+          "howToMeasure": "Average number of platform visits per user per week",
+          "healthyBenchmark": "> 4 sessions"
+        }
+      ]
+    },
+    {
+      "name": "MONETIZATION",
+      "description": "Value Exchange",
+      "order_index": 5,
+      "milestones": [
+        {
+          "title": "Usage Limit Approach",
+          "description": "Free tier user approaches or hits usage limits, triggering upgrade consideration",
+          "order_index": 1
+        },
+        {
+          "title": "Premium Feature Interest",
+          "description": "User explores Pro or Business tier features or clicks upgrade prompts",
+          "order_index": 2
+        },
+        {
+          "title": "Trial Initiation",
+          "description": "User starts free trial of Pro tier to experience premium AI models and features",
+          "order_index": 3
+        },
+        {
+          "title": "Payment Conversion",
+          "description": "User successfully upgrades to paid tier and completes first payment",
+          "order_index": 4
+        },
+        {
+          "title": "Plan Optimization",
+          "description": "User evaluates and potentially upgrades to higher tier based on usage patterns",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Free to Paid Conversion Rate",
+          "howToMeasure": "Percentage of engaged free users who upgrade to paid tier within 30 days",
+          "healthyBenchmark": "> 8%"
+        },
+        {
+          "name": "Trial to Paid Conversion Rate",
+          "howToMeasure": "Percentage of trial users who convert to paying customers",
+          "healthyBenchmark": "> 25%"
+        },
+        {
+          "name": "Time to First Payment",
+          "howToMeasure": "Average days from account creation to first successful payment",
+          "healthyBenchmark": "< 14 days"
+        },
+        {
+          "name": "Upgrade Trigger Effectiveness",
+          "howToMeasure": "Percentage of usage limit notifications that result in upgrade within 7 days",
+          "healthyBenchmark": "> 15%"
+        }
+      ]
+    },
+    {
+      "name": "RETENTION",
+      "description": "Loyalty Building",
+      "order_index": 6,
+      "milestones": [
+        {
+          "title": "First Month Retention",
+          "description": "Paid user continues subscription and maintains active usage through first 30 days",
+          "order_index": 1
+        },
+        {
+          "title": "Workflow Dependency",
+          "description": "User integrates platform deeply into daily workflows, making it essential to their operations",
+          "order_index": 2
+        },
+        {
+          "title": "Advanced Usage Patterns",
+          "description": "User leverages sophisticated features like complex project templates, team sharing, or API integrations",
+          "order_index": 3
+        },
+        {
+          "title": "Community Engagement",
+          "description": "User shares templates, provides feedback, or engages with platform community and support",
+          "order_index": 4
+        },
+        {
+          "title": "Renewal Success",
+          "description": "User successfully renews subscription, indicating long-term platform value",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Monthly Retention Rate",
+          "howToMeasure": "Percentage of paid users who remain active after 30, 60, and 90 days",
+          "healthyBenchmark": "> 80% (30d), > 70% (60d)"
+        },
+        {
+          "name": "Customer Lifetime Value",
+          "howToMeasure": "Average revenue generated per customer over their entire subscription lifetime",
+          "healthyBenchmark": "> $500"
+        },
+        {
+          "name": "Feature Depth Score",
+          "howToMeasure": "Average number of different features used by retained customers per month",
+          "healthyBenchmark": "> 5 features"
+        },
+        {
+          "name": "Support Satisfaction Score",
+          "howToMeasure": "Average satisfaction rating from customer support interactions",
+          "healthyBenchmark": "> 4.5/5"
+        }
+      ]
+    },
+    {
+      "name": "EXPANSION",
+      "description": "Growth Engine",
+      "order_index": 7,
+      "milestones": [
+        {
+          "title": "Plan Upgrade",
+          "description": "User upgrades to higher tier (Pro to Business) based on increased usage and team needs",
+          "order_index": 1
+        },
+        {
+          "title": "Team Invitation",
+          "description": "User invites team members or colleagues to join platform, expanding account value",
+          "order_index": 2
+        },
+        {
+          "title": "Referral Generation",
+          "description": "Satisfied user refers new customers through word-of-mouth or formal referral program",
+          "order_index": 3
+        },
+        {
+          "title": "Enterprise Interest",
+          "description": "User or organization expresses interest in enterprise features, custom solutions, or volume pricing",
+          "order_index": 4
+        },
+        {
+          "title": "Advocacy Activities",
+          "description": "User becomes platform advocate through case studies, testimonials, or community leadership",
+          "order_index": 5
+        }
+      ],
+      "metrics": [
+        {
+          "name": "Account Expansion Rate",
+          "howToMeasure": "Percentage of customers who increase their plan tier or add team members quarterly",
+          "healthyBenchmark": "> 15%"
+        },
+        {
+          "name": "Referral Conversion Rate",
+          "howToMeasure": "Percentage of referred users who convert to paid customers",
+          "healthyBenchmark": "> 12%"
+        },
+        {
+          "name": "Net Revenue Retention",
+          "howToMeasure": "Revenue growth from existing customers through upgrades and expansion",
+          "healthyBenchmark": "> 110%"
+        },
+        {
+          "name": "Advocacy Engagement Rate",
+          "howToMeasure": "Percentage of retained customers who participate in referrals, reviews, or case studies",
+          "healthyBenchmark": "> 20%"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "framework_description": "Comprehensive PLG framework for AI automation SaaS platforms, focusing on developer-friendly tools with enterprise scalability. Tracks user journey from initial discovery through advocacy, with emphasis on technical onboarding, feature adoption, and value realization.",
+    "usage": "Ideal for AI/ML SaaS products, developer tools, and automation platforms targeting both individual professionals and enterprise teams. Includes metrics for technical integration success and advanced feature adoption.",
+    "category": "AI_SAAS",
+    "created_at": "2026-03-19"
+  }
+}
