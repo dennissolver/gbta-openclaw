@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/templates', label: 'Templates' },
   { href: '/projects', label: 'Projects', auth: true },
+  { href: '/integrations', label: 'Integrations', auth: true },
   { href: '/workspace', label: 'Workspace', auth: true },
   { href: '/discover', label: 'Discover' },
   { href: '/functions', label: 'Functions' },
