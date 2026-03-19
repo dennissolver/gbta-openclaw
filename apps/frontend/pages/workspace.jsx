@@ -42,9 +42,13 @@ export default function Workspace() {
     }
   }, [router.query.prompt]);
 
-  // Auto-scroll on new messages
+  // Auto-scroll — instant on history load, smooth on new messages
+  const scrollBehaviorRef = useRef('instant');
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: scrollBehaviorRef.current });
+      scrollBehaviorRef.current = 'smooth';
+    });
   }, [logs, streamingText]);
 
   // Fetch sessions on mount
@@ -219,6 +223,7 @@ export default function Workspace() {
   };
 
   const switchSession = async (key) => {
+    scrollBehaviorRef.current = 'instant'; // Jump to bottom on session load
     setActiveSessionKey(key);
     setLogs([{ role: 'system', text: 'Loading session history...' }]);
     setStreamingText('');

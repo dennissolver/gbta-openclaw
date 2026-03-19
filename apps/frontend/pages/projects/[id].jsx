@@ -107,9 +107,15 @@ export default function ProjectWorkspace() {
     }
   }, [sessions, activeSession]);
 
-  // Auto-scroll
+  // Auto-scroll — instant on history load, smooth on new messages
+  const scrollBehaviorRef = useRef('instant');
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Use requestAnimationFrame to ensure DOM has rendered
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: scrollBehaviorRef.current });
+      // After first scroll (history load), switch to smooth for new messages
+      scrollBehaviorRef.current = 'smooth';
+    });
   }, [logs, streamingText]);
 
   const createNewSession = async (isDefault) => {
@@ -140,6 +146,7 @@ export default function ProjectWorkspace() {
   };
 
   const selectSession = (session) => {
+    scrollBehaviorRef.current = 'instant'; // Jump to bottom on session load
     setActiveSession(session);
     setActiveSessionKey(session.session_key);
     setLogs([
