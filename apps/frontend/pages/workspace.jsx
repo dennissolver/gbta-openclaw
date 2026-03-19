@@ -4,6 +4,8 @@ import { useAuth } from '../lib/auth';
 import DiscoveryBanner from '../components/DiscoveryBanner';
 import AchievementTracker from '../components/AchievementTracker';
 import { unlockAchievement } from '../components/AchievementTracker';
+import UsageMeter from '../components/UsageMeter';
+import UpgradePrompt from '../components/UpgradePrompt';
 
 export default function Workspace() {
   const router = useRouter();
@@ -21,6 +23,10 @@ export default function Workspace() {
   const [streamingText, setStreamingText] = useState('');
   const bottomRef = useRef(null);
   const abortRef = useRef(null);
+
+  // Upgrade prompt state
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [usageData, setUsageData] = useState(null);
 
   // Session state
   const [sessions, setSessions] = useState([]);
@@ -98,7 +104,18 @@ export default function Workspace() {
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
+        if (resp.status === 402 && errData.upgrade) {
+          setUsageData({ used: errData.used, limit: errData.limit, tier: errData.tier });
+          setShowUpgrade(true);
+          setLoading(false);
+          return;
+        }
         throw new Error(errData.error || `HTTP ${resp.status}`);
+      }
+
+      // Refresh usage meter after sending
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('usage-refresh'));
       }
 
       // Read the SSE stream
@@ -365,6 +382,7 @@ export default function Workspace() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <UsageMeter onLimitReached={(data) => { setUsageData(data); setShowUpgrade(true); }} />
             <div className="hidden sm:block w-48">
               <AchievementTracker />
             </div>
@@ -458,6 +476,11 @@ export default function Workspace() {
           )}
         </div>
       </div>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgrade && (
+        <UpgradePrompt usage={usageData} onClose={() => setShowUpgrade(false)} />
+      )}
     </div>
   );
 }

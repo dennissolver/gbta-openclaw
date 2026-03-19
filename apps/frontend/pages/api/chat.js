@@ -70,6 +70,45 @@ export default async function handler(req, res) {
 
   const userId = user.id;
 
+  // Check monthly message limit
+  const TIER_LIMITS = { free: 50, pro: 500, business: 999999 };
+  let userTier = 'free';
+  const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl && svcKey) {
+    try {
+      const db = createClient(supabaseUrl, svcKey);
+      const { data: prof } = await db
+        .from('profiles')
+        .select('tier')
+        .eq('id', userId)
+        .single();
+      if (prof?.tier) userTier = prof.tier;
+
+      const tierLimit = TIER_LIMITS[userTier] || TIER_LIMITS.free;
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { count } = await db
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('role', 'user')
+        .gte('created_at', startOfMonth);
+
+      if (count !== null && count >= tierLimit) {
+        return res.status(402).json({
+          error: 'Message limit reached',
+          upgrade: true,
+          used: count,
+          limit: tierLimit,
+          tier: userTier,
+        });
+      }
+    } catch (e) {
+      console.warn('[chat] Usage check failed:', e.message);
+      // Non-blocking — allow the message if check fails
+    }
+  }
+
   // Resolve agent ID from profile
   let agentId = 'main';
   if (supabaseUrl) {

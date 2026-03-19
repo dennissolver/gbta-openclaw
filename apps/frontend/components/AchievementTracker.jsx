@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ShareButton from './ShareButton';
 
 const ACHIEVEMENTS = [
   {
@@ -178,7 +179,20 @@ export default function AchievementTracker({ expanded: expandedProp = false }) {
 
       {/* Expanded view */}
       {expanded && (
-        <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+        <div className="px-4 pb-4">
+          {unlockedCount > 0 && (
+            <div className="flex justify-end mb-2">
+              <ShareButton
+                type="achievement"
+                data={{
+                  name: 'EasyOpenClaw Progress',
+                  text: `I've explored ${unlockedCount}/${total} capabilities on EasyOpenClaw!`,
+                  stats: { unlocked: unlockedCount, total },
+                }}
+              />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
           {ACHIEVEMENTS.map((a) => {
             const unlocked = achievements[a.id]?.unlocked;
             return (
@@ -213,6 +227,7 @@ export default function AchievementTracker({ expanded: expandedProp = false }) {
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>

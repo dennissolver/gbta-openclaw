@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import DiscoveryBanner from '../../components/DiscoveryBanner';
 import AchievementTracker from '../../components/AchievementTracker';
 import { unlockAchievement } from '../../components/AchievementTracker';
+import ShareButton from '../../components/ShareButton';
 
 const TEMPLATES = [
   {
@@ -460,13 +461,19 @@ export default function ProjectsIndex() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => togglePin(e, p)}
                       className="text-xs text-dark-500 hover:text-brand-400 transition-colors"
                     >
                       {p.pinned ? 'Unpin' : 'Pin'}
                     </button>
+                    <div onClick={(e) => e.preventDefault()}>
+                      <ShareButton
+                        type="project"
+                        data={{ id: p.id, name: p.name, description: p.description, icon: p.icon, color: p.color }}
+                      />
+                    </div>
                     <button
                       onClick={(e) => deleteProject(e, p)}
                       className="text-xs text-dark-500 hover:text-red-400 transition-colors"

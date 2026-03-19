@@ -111,6 +111,9 @@ export default function Layout({ children }) {
               <Link href="/references" className="hover:text-white transition-colors">
                 References
               </Link>
+              <Link href="/enterprise" className="hover:text-white transition-colors">
+                Enterprise
+              </Link>
               <a href="https://www.corporateaisolutions.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
                 Corporate AI Solutions
               </a>

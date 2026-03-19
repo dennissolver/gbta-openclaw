@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../lib/auth';
+import UsageMeter from '../../components/UsageMeter';
+import UpgradePrompt from '../../components/UpgradePrompt';
 
 export default function ProjectWorkspace() {
   const router = useRouter();
@@ -29,6 +31,10 @@ export default function ProjectWorkspace() {
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Upgrade prompt state
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [usageData, setUsageData] = useState(null);
 
   // Editable project fields
   const [editInstructions, setEditInstructions] = useState('');
@@ -231,7 +237,18 @@ export default function ProjectWorkspace() {
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
+        if (resp.status === 402 && errData.upgrade) {
+          setUsageData({ used: errData.used, limit: errData.limit, tier: errData.tier });
+          setShowUpgrade(true);
+          setLoading(false);
+          return;
+        }
         throw new Error(errData.error || `HTTP ${resp.status}`);
+      }
+
+      // Refresh usage meter after sending
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('usage-refresh'));
       }
 
       const reader = resp.body.getReader();
@@ -497,6 +514,7 @@ export default function ProjectWorkspace() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <UsageMeter onLimitReached={(data) => { setUsageData(data); setShowUpgrade(true); }} />
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
               <span className="text-dark-400 text-sm">Agent Online</span>
@@ -703,6 +721,11 @@ export default function ProjectWorkspace() {
           )}
         </div>
       </div>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgrade && (
+        <UpgradePrompt usage={usageData} onClose={() => setShowUpgrade(false)} />
+      )}
     </div>
   );
 }
