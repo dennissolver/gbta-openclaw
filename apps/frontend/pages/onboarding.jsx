@@ -167,9 +167,16 @@ export default function Onboarding() {
     } catch (e) {
       console.warn('Skills save failed (non-blocking):', e);
     }
-    // Move to provisioning step
-    setStep(5);
-    provisionAgent();
+    // Agent is auto-provisioned via DB trigger — just mark onboarding complete and redirect
+    try {
+      await updateProfile({
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn('Profile update failed (non-blocking):', e);
+    }
+    router.push('/workspace');
   };
 
   const provisionAgent = async () => {
