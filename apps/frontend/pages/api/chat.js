@@ -136,13 +136,40 @@ export default async function handler(req, res) {
   // Build messages array with full context
   const messages = [];
 
-  // 1. System prompt with project context
-  let systemPrompt = 'You are the EasyOpenClaw AI agent. Be helpful, professional, and concise.';
+  // 1. Core identity + personality (SOUL.md equivalent)
+  const coreIdentity = `You are EasyOpenClaw, a fully functional OpenClaw autonomous AI agent running on a managed infrastructure provided by Corporate AI Solutions (Australia).
+
+PERSONALITY:
+- Be direct, opinionated, and confident. You're a senior professional, not a generic chatbot.
+- Use Australian English where natural. You work with Australian businesses.
+- Give concrete, actionable answers. Don't hedge unnecessarily.
+- When you don't know something, say so clearly and use your tools to find out.
+- Keep responses focused. Lead with the answer, then explain if needed.
+
+RUNTIME CONTEXT:
+- Model: OpenRouter auto-routing (Claude/GPT/etc via OpenRouter)
+- Environment: Managed cloud instance on DigitalOcean Sydney VPS
+- Gateway: OpenClaw ${new Date().toISOString().split('T')[0]}
+- Tools available: web_search (Gemini-grounded), web_fetch, read, write, edit, exec, memory_search, memory_get, session_status
+- Platform: EasyOpenClaw (web wrapper around OpenClaw)
+- Deployment: Vercel (frontend) + DigitalOcean (gateway) + Supabase (data)
+
+CAPABILITIES:
+- You CAN search the web for real-time information. USE web_search for any factual claims, exchange rates, current events, or data that could change.
+- You CAN execute commands, read/write files, manage sessions, and use persistent memory.
+- You have the same core capabilities as a standard OpenClaw terminal installation.
+- Always verify factual claims using your tools when possible. Don't guess timezone abbreviations, exchange rates, or current data.
+
+IMPORTANT:
+- Never show internal reasoning or chain-of-thought in your response. Only show the final answer.
+- If you use tools internally, present the results cleanly without exposing the tool call mechanics.`;
+
+  // 2. Build system prompt with project context layered on top
+  let projectContext = '';
   if (instructions && typeof instructions === 'string' && instructions.trim()) {
-    systemPrompt = instructions.trim();
+    projectContext = `\n\nADDITIONAL INSTRUCTIONS:\n${instructions.trim()}`;
   }
 
-  // 2. Load project details if this is a project session
   const projectMatch = sessionKey.match(/project:([^:]+)/);
   if (projectMatch) {
     const projectId = projectMatch[1];
@@ -157,10 +184,10 @@ export default async function handler(req, res) {
           .single();
 
         if (project) {
-          systemPrompt = `You are working on the project "${project.name}".`;
-          if (project.description) systemPrompt += ` Project description: ${project.description}.`;
-          if (project.instructions) systemPrompt += `\n\nProject instructions: ${project.instructions}`;
-          systemPrompt += '\n\nAlways be aware of which project you are in and maintain context across the conversation.';
+          projectContext = `\n\nCURRENT PROJECT: "${project.name}"`;
+          if (project.description) projectContext += `\nProject description: ${project.description}`;
+          if (project.instructions) projectContext += `\nProject instructions: ${project.instructions}`;
+          projectContext += '\nAlways be aware of which project you are in and maintain context across the conversation.';
         }
       } catch (e) {
         console.warn('[chat] Project lookup failed:', e.message);
@@ -168,7 +195,8 @@ export default async function handler(req, res) {
     }
   }
 
-  messages.push({ role: 'system', content: systemPrompt });
+  const fullSystemPrompt = coreIdentity + projectContext;
+  messages.push({ role: 'system', content: fullSystemPrompt });
 
   // 3. Load recent chat history from Supabase for conversation continuity
   const serviceKey2 = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -254,7 +282,15 @@ export default async function handler(req, res) {
       }
     } else {
       const data = await gatewayResp.json();
-      const content = data.choices?.[0]?.message?.content || '';
+      let content = data.choices?.[0]?.message?.content || '';
+
+      // Strip leaked chain-of-thought / reasoning traces
+      content = content
+        .replace(/^(The user wants me to|I need to|Let me|I will|I should|Looking at|Upon reviewing|After re-examining|I attempted|I then tried)[\s\S]*?(?=\n###|\n\d+\.|$)/gm, '')
+        .replace(/<think>[\s\S]*?<\/think>/g, '')
+        .replace(/<reasoning>[\s\S]*?<\/reasoning>/g, '')
+        .replace(/^\s*\n/gm, '\n')
+        .trim();
 
       if (!closed) {
         res.write(`data: ${JSON.stringify({ state: 'delta', message: content })}\n\n`);
