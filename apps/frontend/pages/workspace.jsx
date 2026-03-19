@@ -6,6 +6,7 @@ import AchievementTracker from '../components/AchievementTracker';
 import { unlockAchievement } from '../components/AchievementTracker';
 import UsageMeter from '../components/UsageMeter';
 import UpgradePrompt from '../components/UpgradePrompt';
+import FileUploader from '../components/FileUploader';
 
 export default function Workspace() {
   const router = useRouter();
@@ -33,6 +34,19 @@ export default function Workspace() {
   const [activeSessionKey, setActiveSessionKey] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // File upload modal
+  const [showFileUpload, setShowFileUpload] = useState(false);
+
+  const { supabase } = useAuth();
+  const getAuthHeaders = useCallback(async () => {
+    if (!supabase) return {};
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
+    return {};
+  }, [supabase]);
 
   // Set default session key based on user and their agent
   useEffect(() => {
@@ -450,6 +464,15 @@ export default function Workspace() {
 
         {/* Input */}
         <div className="flex gap-3">
+          <button
+            onClick={() => setShowFileUpload(true)}
+            className="self-end text-dark-400 hover:text-brand-400 transition-colors p-2.5"
+            title="Attach file"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </button>
           <textarea
             className="flex-1 bg-dark-900 border border-dark-700 rounded-xl px-4 py-3 text-white text-sm resize-none focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 placeholder-dark-500"
             rows={2}
@@ -476,6 +499,35 @@ export default function Workspace() {
           )}
         </div>
       </div>
+
+      {/* File Upload Modal */}
+      {showFileUpload && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowFileUpload(false)}>
+          <div className="bg-dark-900 border border-dark-700 rounded-xl p-5 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wide">Upload Files</h3>
+              <button
+                onClick={() => setShowFileUpload(false)}
+                className="text-dark-400 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-xs text-dark-500 mb-3">
+              Files uploaded here are available as context in the current session.
+              For project-specific files, use the project settings panel.
+            </p>
+            <FileUploader
+              projectId="workspace"
+              sessionKey={activeSessionKey}
+              getAuthHeaders={getAuthHeaders}
+              onFilesChange={() => setShowFileUpload(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Upgrade Prompt Modal */}
       {showUpgrade && (

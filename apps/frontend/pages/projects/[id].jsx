@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../lib/auth';
 import UsageMeter from '../../components/UsageMeter';
 import UpgradePrompt from '../../components/UpgradePrompt';
+import FileUploader from '../../components/FileUploader';
+import FileList from '../../components/FileList';
 
 export default function ProjectWorkspace() {
   const router = useRouter();
@@ -41,6 +43,10 @@ export default function ProjectWorkspace() {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // File upload refresh trigger
+  const [fileRefresh, setFileRefresh] = useState(0);
+  const handleFilesChange = useCallback(() => setFileRefresh((n) => n + 1), []);
 
   const getAuthHeaders = useCallback(async () => {
     if (!supabase) return {};
@@ -477,6 +483,16 @@ export default function ProjectWorkspace() {
               </div>
             ))}
           </div>
+
+          {/* Project Files in sidebar */}
+          <div className="border-t border-dark-700 p-2 max-h-64 overflow-y-auto">
+            <FileList
+              projectId={projectId}
+              getAuthHeaders={getAuthHeaders}
+              refreshTrigger={fileRefresh}
+              compact
+            />
+          </div>
         </div>
       )}
 
@@ -702,6 +718,26 @@ export default function ProjectWorkspace() {
                   ) : (
                     <p className="text-xs text-dark-500">No functions pinned to this project.</p>
                   )}
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <h4 className="text-xs text-dark-400 mb-2 uppercase tracking-wide">
+                    Project Files
+                  </h4>
+                  <FileUploader
+                    projectId={projectId}
+                    sessionKey={activeSessionKey}
+                    getAuthHeaders={getAuthHeaders}
+                    onFilesChange={handleFilesChange}
+                  />
+                  <div className="mt-3">
+                    <FileList
+                      projectId={projectId}
+                      getAuthHeaders={getAuthHeaders}
+                      refreshTrigger={fileRefresh}
+                    />
+                  </div>
                 </div>
 
                 {/* Project Info */}

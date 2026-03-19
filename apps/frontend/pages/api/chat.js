@@ -188,6 +188,36 @@ IMPORTANT:
           if (project.description) projectContext += `\nProject description: ${project.description}`;
           if (project.instructions) projectContext += `\nProject instructions: ${project.instructions}`;
           projectContext += '\nAlways be aware of which project you are in and maintain context across the conversation.';
+
+          // Load project files as additional context
+          try {
+            const { data: projectFiles } = await db
+              .from('project_files')
+              .select('filename, extracted_text')
+              .eq('project_id', projectId)
+              .eq('user_id', userId)
+              .order('created_at', { ascending: true });
+
+            if (projectFiles && projectFiles.length > 0) {
+              let fileContext = '\n\nPROJECT FILES:';
+              let totalChars = 0;
+              const MAX_FILE_CONTEXT = 10000;
+
+              for (const pf of projectFiles) {
+                if (!pf.extracted_text) continue;
+                const preview = pf.extracted_text.slice(0, 2000);
+                if (totalChars + preview.length > MAX_FILE_CONTEXT) break;
+                fileContext += `\n- ${pf.filename}: ${preview}`;
+                totalChars += preview.length + pf.filename.length + 4;
+              }
+
+              if (totalChars > 0) {
+                projectContext += fileContext;
+              }
+            }
+          } catch (fileErr) {
+            console.warn('[chat] Project files lookup failed:', fileErr.message);
+          }
         }
       } catch (e) {
         console.warn('[chat] Project lookup failed:', e.message);
