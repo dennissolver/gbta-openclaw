@@ -7,6 +7,7 @@ import { unlockAchievement } from '../components/AchievementTracker';
 import UsageMeter from '../components/UsageMeter';
 import UpgradePrompt from '../components/UpgradePrompt';
 import FileUploader from '../components/FileUploader';
+import FileList from '../components/FileList';
 
 export default function Workspace() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function Workspace() {
 
   // File upload modal
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [fileRefresh, setFileRefresh] = useState(0);
 
   const { supabase } = useAuth();
   const getAuthHeaders = useCallback(async () => {
@@ -518,14 +520,20 @@ export default function Workspace() {
             </div>
             <p className="text-xs text-dark-500 mb-3">
               Files uploaded here are available as context in the current session.
-              For project-specific files, use the project settings panel.
             </p>
             <FileUploader
               projectId="workspace"
               sessionKey={activeSessionKey}
               getAuthHeaders={getAuthHeaders}
-              onFilesChange={() => setShowFileUpload(false)}
+              onFilesChange={() => setFileRefresh(n => n + 1)}
             />
+            <div className="mt-4 border-t border-dark-700 pt-3 max-h-48 overflow-y-auto">
+              <FileList
+                projectId="workspace"
+                getAuthHeaders={getAuthHeaders}
+                refreshTrigger={fileRefresh}
+              />
+            </div>
           </div>
         </div>
       )}

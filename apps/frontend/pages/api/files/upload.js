@@ -34,21 +34,26 @@ const DOC_EXTENSIONS = new Set(['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx
 
 async function getUser(req) {
   if (!supabaseUrl || !serviceKey) return { user: null };
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (token) {
-    const supabase = createClient(supabaseUrl, anonKey);
+    // Use service role key for reliable token verification in serverless
+    const supabase = createClient(supabaseUrl, serviceKey);
     const { data: { user } } = await supabase.auth.getUser(token);
-    return { user };
+    if (user) return { user };
   }
 
-  const supabase = createClient(supabaseUrl, anonKey, {
-    global: { headers: { cookie: req.headers.cookie || '' } },
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  return { user };
+  // Cookie fallback
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (anonKey) {
+    const supabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { cookie: req.headers.cookie || '' } },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    return { user };
+  }
+  return { user: null };
 }
 
 function parseForm(req) {
