@@ -32,9 +32,9 @@ function formatSize(bytes) {
 export default function FileUploader({ projectId, sessionKey, getAuthHeaders, onFilesChange }) {
   const [activeTab, setActiveTab] = useState('upload');
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
 
   // URL tab state
   const [url, setUrl] = useState('');
@@ -51,68 +51,71 @@ export default function FileUploader({ projectId, sessionKey, getAuthHeaders, on
 
   const clearMessages = () => { setError(''); setSuccess(''); };
 
-  const uploadFiles = useCallback(async (fileList) => {
-    if (!fileList || fileList.length === 0) return;
+  const doUpload = useCallback(async (file) => {
+    if (!file) return;
     clearMessages();
     setUploading(true);
+    setUploadedFile({ name: file.name, size: file.size, status: 'uploading' });
 
-    const headers = getAuthHeaders ? await getAuthHeaders() : {};
-    const results = [];
+    try {
+      const authHeaders = getAuthHeaders ? await getAuthHeaders() : {};
 
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const fileKey = `${file.name}-${Date.now()}`;
-      setUploadProgress((prev) => ({ ...prev, [fileKey]: { name: file.name, progress: 0 } }));
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('projectId', projectId);
+      if (sessionKey) formData.append('sessionKey', sessionKey);
 
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('projectId', projectId);
-        if (sessionKey) formData.append('sessionKey', sessionKey);
+      const resp = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: authHeaders,
+        body: formData,
+      });
 
-        const resp = await fetch('/api/files/upload', {
-          method: 'POST',
-          headers,
-          body: formData,
-        });
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          throw new Error(err.error || `Upload failed: HTTP ${resp.status}`);
-        }
-
-        const data = await resp.json();
-        results.push(data);
-        setUploadProgress((prev) => ({ ...prev, [fileKey]: { name: file.name, progress: 100 } }));
-      } catch (err) {
-        setUploadProgress((prev) => ({ ...prev, [fileKey]: { name: file.name, progress: -1, error: err.message } }));
-        setError(err.message);
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Upload failed: HTTP ${resp.status}`);
       }
-    }
 
-    setUploading(false);
-    if (results.length > 0) {
-      setSuccess(`${results.length} file${results.length > 1 ? 's' : ''} uploaded successfully`);
+      const data = await resp.json();
+      setUploadedFile({ name: file.name, size: file.size, status: 'done' });
+      setSuccess(`Uploaded: ${data.filename}`);
       onFilesChange?.();
+    } catch (err) {
+      console.error('[FileUploader] Upload error:', err);
+      setUploadedFile({ name: file.name, size: file.size, status: 'failed', error: err.message });
+      setError(err.message);
+    } finally {
+      setUploading(false);
     }
-
-    // Clear progress after a delay
-    setTimeout(() => setUploadProgress({}), 3000);
   }, [projectId, sessionKey, getAuthHeaders, onFilesChange]);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragOver(false);
-    uploadFiles(e.dataTransfer.files);
-  }, [uploadFiles]);
-
-  const handleDragOver = (e) => { e.preventDefault(); setDragOver(true); };
-  const handleDragLeave = () => setDragOver(false);
-
-  const handleFileSelect = (e) => {
-    uploadFiles(e.target.files);
-    e.target.value = '';
+  const openFilePicker = (e) => {
+    e.stopPropagation();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
   };
+
+  const onFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      doUpload(file);
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      doUpload(file);
+    }
+  };
+
+  const onDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
+  const onDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
 
   const handleFetchUrl = async () => {
     if (!url.trim()) return;
@@ -211,11 +214,24 @@ export default function FileUploader({ projectId, sessionKey, getAuthHeaders, on
       {/* Upload File Tab */}
       {activeTab === 'upload' && (
         <div>
+          {/* Hidden file input — outside the drop zone to avoid event issues */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={onFileInputChange}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.json,.html,.xml,.yaml,.yml,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg"
+          />
+
+          {/* Drop zone */}
           <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onClick={openFilePicker}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openFilePicker(e); }}
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               dragOver
                 ? 'border-brand-500 bg-brand-500/10'
@@ -223,43 +239,30 @@ export default function FileUploader({ projectId, sessionKey, getAuthHeaders, on
             }`}
           >
             <div className="text-2xl mb-2">
-              {uploading ? '⏳' : '📁'}
+              {uploading ? '⏳' : dragOver ? '📥' : '📁'}
             </div>
             <p className="text-sm text-dark-300">
-              {uploading ? 'Uploading...' : 'Drop files here or click to browse'}
+              {uploading ? 'Uploading...' : dragOver ? 'Drop file here' : 'Drop files here or click to browse'}
             </p>
             <p className="text-xs text-dark-500 mt-1">
-              PDF, DOC, XLS, images, text files (max 50MB)
+              PDF, DOC, XLS, images, text files (max 20MB)
             </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.json,.html,.xml,.yaml,.yml,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg"
-            />
           </div>
 
-          {/* Upload progress */}
-          {Object.entries(uploadProgress).length > 0 && (
-            <div className="mt-2 space-y-1">
-              {Object.entries(uploadProgress).map(([key, item]) => (
-                <div key={key} className="flex items-center gap-2 text-xs">
-                  <span className="truncate flex-1 text-dark-300">{item.name}</span>
-                  {item.progress === 100 && (
-                    <span className="text-green-400">Done</span>
-                  )}
-                  {item.progress === -1 && (
-                    <span className="text-red-400">Failed</span>
-                  )}
-                  {item.progress >= 0 && item.progress < 100 && (
-                    <div className="w-16 h-1.5 bg-dark-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-500 rounded-full animate-pulse" style={{ width: '60%' }} />
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Upload status */}
+          {uploadedFile && (
+            <div className="mt-2 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-dark-800 border border-dark-700">
+              <span className="truncate flex-1 text-dark-300">{uploadedFile.name}</span>
+              <span className="text-dark-500 flex-shrink-0">{formatSize(uploadedFile.size)}</span>
+              {uploadedFile.status === 'uploading' && (
+                <span className="text-brand-400 flex-shrink-0 animate-pulse">Uploading...</span>
+              )}
+              {uploadedFile.status === 'done' && (
+                <span className="text-green-400 flex-shrink-0">Done</span>
+              )}
+              {uploadedFile.status === 'failed' && (
+                <span className="text-red-400 flex-shrink-0">Failed</span>
+              )}
             </div>
           )}
         </div>
