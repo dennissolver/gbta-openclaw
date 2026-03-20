@@ -61,6 +61,7 @@ function parseForm(req) {
     const form = formidable({
       maxFileSize: MAX_FILE_SIZE,
       keepExtensions: true,
+      uploadDir: '/tmp',
     });
     form.parse(req, (err, fields, files) => {
       if (err) reject(err);
