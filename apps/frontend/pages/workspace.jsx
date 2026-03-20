@@ -106,9 +106,10 @@ export default function Workspace() {
     abortRef.current = abortController;
 
     try {
+      const authHeaders = await getAuthHeaders();
       const resp = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({
           message: currentMsg,
           sessionKey: activeSessionKey,

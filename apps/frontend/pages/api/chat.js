@@ -33,11 +33,16 @@ async function getUser(req) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (token) {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // Use service role key to verify tokens reliably in serverless
+    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = svcKey || supabaseAnonKey;
+    const supabase = createClient(supabaseUrl, key);
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    return { user, error };
+    if (user) return { user, error: null };
+    console.warn('[chat] Token auth failed:', error?.message);
   }
 
+  // Cookie fallback (works in dev, unreliable on Vercel serverless)
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { cookie: req.headers.cookie || '' } },
   });
