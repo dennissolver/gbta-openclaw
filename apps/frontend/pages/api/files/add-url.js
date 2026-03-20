@@ -72,14 +72,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { url, projectId, sessionKey } = req.body || {};
+  const { url, projectId: rawProjectId, sessionKey } = req.body || {};
 
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url is required' });
   }
-  if (!projectId) {
+  if (!rawProjectId) {
     return res.status(400).json({ error: 'projectId is required' });
   }
+
+  // "workspace" is not a valid UUID — store as null for non-project files
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawProjectId);
+  const projectId = isUuid ? rawProjectId : null;
 
   // Validate URL
   let parsedUrl;
@@ -139,7 +143,7 @@ export default async function handler(req, res) {
       filename: filename,
       file_type: 'text/html',
       file_size: Buffer.byteLength(extractedText, 'utf-8'),
-      storage_path: null,
+      storage_path: '',
       extracted_text: extractedText.slice(0, 100000), // Limit to 100k chars
       source_type: 'url',
       source_url: url,

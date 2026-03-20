@@ -62,7 +62,13 @@ export default async function handler(req, res) {
     .order('created_at', { ascending: false });
 
   if (projectId) {
-    query = query.eq('project_id', projectId);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+    if (isUuid) {
+      query = query.eq('project_id', projectId);
+    } else {
+      // "workspace" or other non-UUID — query for null project_id
+      query = query.is('project_id', null);
+    }
   }
   if (sessionKey) {
     query = query.eq('session_key', sessionKey);

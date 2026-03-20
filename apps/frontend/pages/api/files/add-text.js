@@ -45,14 +45,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { text, title, projectId, sessionKey } = req.body || {};
+  const { text, title, projectId: rawProjectId, sessionKey } = req.body || {};
 
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
-  if (!projectId) {
+  if (!rawProjectId) {
     return res.status(400).json({ error: 'projectId is required' });
   }
+
+  // "workspace" is not a valid UUID — store as null for non-project files
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawProjectId);
+  const projectId = isUuid ? rawProjectId : null;
 
   const filename = (title || 'Untitled Text').trim();
 
@@ -67,7 +71,7 @@ export default async function handler(req, res) {
       filename,
       file_type: 'text/plain',
       file_size: Buffer.byteLength(text, 'utf-8'),
-      storage_path: null,
+      storage_path: '',
       extracted_text: text.slice(0, 100000),
       source_type: 'text',
     })

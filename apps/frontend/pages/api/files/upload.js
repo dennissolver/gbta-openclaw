@@ -131,12 +131,16 @@ export default async function handler(req, res) {
   }
 
   // formidable v3 wraps values in arrays
-  const projectId = Array.isArray(fields.projectId) ? fields.projectId[0] : fields.projectId;
+  const rawProjectId = Array.isArray(fields.projectId) ? fields.projectId[0] : fields.projectId;
   const sessionKey = Array.isArray(fields.sessionKey) ? fields.sessionKey[0] : fields.sessionKey;
 
-  if (!projectId) {
+  if (!rawProjectId) {
     return res.status(400).json({ error: 'projectId is required' });
   }
+
+  // "workspace" is not a valid UUID — store as null for non-project files
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawProjectId);
+  const projectId = isUuid ? rawProjectId : null;
 
   // Get the uploaded file — formidable v3 wraps in array
   const fileField = files.file;
@@ -153,7 +157,7 @@ export default async function handler(req, res) {
   const fileBuffer = fs.readFileSync(file.filepath);
 
   // Upload to Supabase Storage
-  const storagePath = `${user.id}/${projectId}/${filename}`;
+  const storagePath = `${user.id}/${rawProjectId}/${filename}`;
   const db = createClient(supabaseUrl, serviceKey);
 
   const { error: uploadError } = await db.storage
