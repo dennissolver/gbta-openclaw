@@ -7,24 +7,25 @@
  * - sessionKey: optional session key
  *
  * Uploads to Supabase Storage and extracts text where possible.
+ * Uses native Request.formData() — works reliably on Vercel serverless.
  */
 import { createClient } from '@supabase/supabase-js';
-import formidable from 'formidable';
-import fs from 'fs';
-import path from 'path';
 
 export const config = {
-  api: { bodyParser: false },
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB (Vercel hobby limit ~4.5MB body)
 
 const TEXT_EXTENSIONS = new Set([
   '.txt', '.csv', '.md', '.json', '.html', '.htm', '.xml', '.yaml', '.yml',
-  '.log', '.ini', '.cfg', '.conf', '.env', '.sh', '.bat', '.ps1',
+  '.log', '.ini', '.cfg', '.conf', '.sh', '.bat', '.ps1',
   '.js', '.jsx', '.ts', '.tsx', '.py', '.rb', '.go', '.rs', '.java', '.c', '.cpp', '.h',
   '.css', '.scss', '.less', '.sql', '.graphql',
 ]);
@@ -34,21 +35,20 @@ const DOC_EXTENSIONS = new Set(['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx
 
 async function getUser(req) {
   if (!supabaseUrl || !serviceKey) return { user: null };
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization || req.headers.get?.('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (token) {
-    // Use service role key for reliable token verification in serverless
     const supabase = createClient(supabaseUrl, serviceKey);
     const { data: { user } } = await supabase.auth.getUser(token);
     if (user) return { user };
   }
 
-  // Cookie fallback
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (anonKey) {
+    const cookie = req.headers.cookie || req.headers.get?.('cookie') || '';
     const supabase = createClient(supabaseUrl, anonKey, {
-      global: { headers: { cookie: req.headers.cookie || '' } },
+      global: { headers: { cookie } },
     });
     const { data: { user } } = await supabase.auth.getUser();
     return { user };
@@ -56,28 +56,18 @@ async function getUser(req) {
   return { user: null };
 }
 
-function parseForm(req) {
-  return new Promise((resolve, reject) => {
-    const form = formidable({
-      maxFileSize: MAX_FILE_SIZE,
-      keepExtensions: true,
-      uploadDir: '/tmp',
-    });
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
+function getExtension(filename) {
+  const dot = filename.lastIndexOf('.');
+  return dot >= 0 ? filename.slice(dot).toLowerCase() : '';
 }
 
-async function extractText(filePath, filename, mimeType) {
-  const ext = path.extname(filename).toLowerCase();
+async function extractTextFromBuffer(buffer, filename, mimeType) {
+  const ext = getExtension(filename);
 
   // PDF extraction
   if (ext === '.pdf' || mimeType === 'application/pdf') {
     try {
       const pdfParse = (await import('pdf-parse')).default;
-      const buffer = fs.readFileSync(filePath);
       const data = await pdfParse(buffer);
       return data.text || '';
     } catch (e) {
@@ -89,7 +79,7 @@ async function extractText(filePath, filename, mimeType) {
   // Plain text files
   if (TEXT_EXTENSIONS.has(ext) || mimeType?.startsWith('text/')) {
     try {
-      return fs.readFileSync(filePath, 'utf-8');
+      return buffer.toString('utf-8');
     } catch {
       return `Text file: ${filename}`;
     }
@@ -123,49 +113,68 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  let fields, files;
+  // Read the raw body and parse multipart manually using Web API
+  let formData;
   try {
-    ({ fields, files } = await parseForm(req));
+    // Convert Node.js IncomingMessage to a Request-like object for formData()
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+    const body = Buffer.concat(chunks);
+    const contentType = req.headers['content-type'] || '';
+
+    // Use the Web API Request to parse multipart
+    const request = new Request('http://localhost', {
+      method: 'POST',
+      headers: { 'content-type': contentType },
+      body,
+    });
+    formData = await request.formData();
   } catch (err) {
-    console.error('[upload] Form parse error:', err.message);
+    console.error('[upload] FormData parse error:', err.message);
     return res.status(400).json({ error: 'Failed to parse upload: ' + err.message });
   }
 
-  // formidable v3 wraps values in arrays
-  const rawProjectId = Array.isArray(fields.projectId) ? fields.projectId[0] : fields.projectId;
-  const sessionKey = Array.isArray(fields.sessionKey) ? fields.sessionKey[0] : fields.sessionKey;
+  const file = formData.get('file');
+  const rawProjectId = formData.get('projectId');
+  const sessionKey = formData.get('sessionKey');
+
+  if (!file || typeof file === 'string') {
+    return res.status(400).json({ error: 'No file provided' });
+  }
 
   if (!rawProjectId) {
     return res.status(400).json({ error: 'projectId is required' });
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return res.status(400).json({ error: `File too large. Maximum size is 20MB.` });
   }
 
   // "workspace" is not a valid UUID — store as null for non-project files
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawProjectId);
   const projectId = isUuid ? rawProjectId : null;
 
-  // Get the uploaded file — formidable v3 wraps in array
-  const fileField = files.file;
-  const file = Array.isArray(fileField) ? fileField[0] : fileField;
-  if (!file) {
-    return res.status(400).json({ error: 'No file provided' });
-  }
-
-  const filename = file.originalFilename || file.newFilename || 'unnamed';
-  const mimeType = file.mimetype || 'application/octet-stream';
+  const filename = file.name || 'unnamed';
+  const mimeType = file.type || 'application/octet-stream';
   const fileSize = file.size || 0;
 
-  // Read file buffer
-  const fileBuffer = fs.readFileSync(file.filepath);
+  // Convert File to Buffer (proven pattern from NDISSDAAutomate)
+  const buffer = Buffer.from(await file.arrayBuffer());
 
   // Upload to Supabase Storage
-  const storagePath = `${user.id}/${rawProjectId}/${filename}`;
+  const timestamp = Date.now();
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storagePath = `${user.id}/${rawProjectId}/${timestamp}_${safeName}`;
   const db = createClient(supabaseUrl, serviceKey);
 
   const { error: uploadError } = await db.storage
     .from('project-files')
-    .upload(storagePath, fileBuffer, {
+    .upload(storagePath, buffer, {
       contentType: mimeType,
-      upsert: true,
+      cacheControl: '3600',
+      upsert: false,
     });
 
   if (uploadError) {
@@ -174,7 +183,7 @@ export default async function handler(req, res) {
   }
 
   // Extract text content
-  const extractedText = await extractText(file.filepath, filename, mimeType);
+  const extractedText = await extractTextFromBuffer(buffer, filename, mimeType);
 
   // Save metadata to project_files table
   const { data: record, error: dbError } = await db
@@ -195,13 +204,9 @@ export default async function handler(req, res) {
 
   if (dbError) {
     console.error('[upload] DB insert error:', dbError);
-    // Try to clean up the uploaded file
     await db.storage.from('project-files').remove([storagePath]).catch(() => {});
     return res.status(500).json({ error: 'Failed to save file record: ' + dbError.message });
   }
-
-  // Clean up temp file
-  try { fs.unlinkSync(file.filepath); } catch {}
 
   return res.status(200).json({
     id: record.id,
