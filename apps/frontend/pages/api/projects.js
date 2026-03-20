@@ -19,12 +19,13 @@ async function getAuthenticatedUser(req) {
 
   const token = req.headers.authorization?.replace('Bearer ', '');
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
   if (token) {
+    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = svcKey || supabaseAnonKey;
+    const supabase = createClient(supabaseUrl, key);
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) return { user: null, supabase: null };
-    return { user, supabase };
+    if (user) return { user, supabase };
+    if (error) return { user: null, supabase: null };
   }
 
   // Try cookie-based auth

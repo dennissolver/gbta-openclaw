@@ -16,9 +16,11 @@ async function getUser(req) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (token) {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = svcKey || supabaseAnonKey;
+    const supabase = createClient(supabaseUrl, key);
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    return { user, error };
+    if (user) return { user, error: null };
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {

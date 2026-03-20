@@ -18,11 +18,13 @@ async function getAuthenticatedUser(req) {
   }
 
   const token = req.headers.authorization?.replace('Bearer ', '');
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   if (token) {
+    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = svcKey || supabaseAnonKey;
+    const supabase = createClient(supabaseUrl, key);
     const { data: { user } } = await supabase.auth.getUser(token);
-    return { user };
+    if (user) return { user };
   }
 
   const sbCookie = createClient(supabaseUrl, supabaseAnonKey, {

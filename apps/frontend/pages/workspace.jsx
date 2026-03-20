@@ -77,7 +77,8 @@ export default function Workspace() {
   const fetchSessions = useCallback(async () => {
     setLoadingSessions(true);
     try {
-      const resp = await fetch('/api/sessions');
+      const headers = await getAuthHeaders();
+      const resp = await fetch('/api/sessions', { headers });
       if (resp.ok) {
         const data = await resp.json();
         setSessions(data.sessions || []);
@@ -87,7 +88,7 @@ export default function Workspace() {
     } finally {
       setLoadingSessions(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     fetchSessions();
@@ -263,7 +264,8 @@ export default function Workspace() {
     setStreamingText('');
 
     try {
-      const resp = await fetch(`/api/history?sessionKey=${encodeURIComponent(key)}`);
+      const headers = await getAuthHeaders();
+      const resp = await fetch(`/api/history?sessionKey=${encodeURIComponent(key)}`, { headers });
       if (resp.ok) {
         const data = await resp.json();
         const history = (data.messages || []).map(m => ({

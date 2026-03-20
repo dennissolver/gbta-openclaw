@@ -30,9 +30,18 @@ async function getUser(req) {
     return { user, error };
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = svcKey || supabaseAnonKey;
+  const supabase = createClient(supabaseUrl, key);
   const { data: { user }, error } = await supabase.auth.getUser(token);
-  return { user, error };
+  if (user) return { user, error: null };
+
+  // Token failed — fall through to cookie auth
+  const sbCookie = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { cookie: req.headers.cookie || '' } },
+  });
+  const { data: { user: cookieUser }, error: cookieError } = await sbCookie.auth.getUser();
+  return { user: cookieUser, error: cookieError };
 }
 
 function getServiceClient() {

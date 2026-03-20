@@ -176,7 +176,8 @@ export default function ProjectWorkspace() {
 
   const loadSessionHistory = async (sessionKey) => {
     try {
-      const resp = await fetch(`/api/history?sessionKey=${encodeURIComponent(sessionKey)}`);
+      const headers = await getAuthHeaders();
+      const resp = await fetch(`/api/history?sessionKey=${encodeURIComponent(sessionKey)}`, { headers });
       if (resp.ok) {
         const data = await resp.json();
         const history = (data.messages || []).map((m) => ({
