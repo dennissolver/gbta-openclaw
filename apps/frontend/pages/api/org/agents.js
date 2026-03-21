@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const { createAgentProvisioner } = require('../../../../shared/agents/provisioner');
+      const { createAgentProvisioner } = require('../../../shared/agents/provisioner');
       const provisioner = createAgentProvisioner(db, vpsAdminUrl, vpsAdminToken);
       const result = await provisioner.provisionPair(profile.org_id, employeeUserId, {
         name: employeeName,
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const { createAgentProvisioner } = require('../../../../shared/agents/provisioner');
+      const { createAgentProvisioner } = require('../../../shared/agents/provisioner');
       const provisioner = createAgentProvisioner(db, vpsAdminUrl, vpsAdminToken);
       await provisioner.deprovision(profile.org_id, employeeUserId);
       return res.json({ status: 'deprovisioned' });
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
     const { activeOnly, agentRole } = req.query;
 
     try {
-      const { createAgentProvisioner } = require('../../../../shared/agents/provisioner');
+      const { createAgentProvisioner } = require('../../../shared/agents/provisioner');
       const provisioner = createAgentProvisioner(db, vpsAdminUrl, vpsAdminToken);
       const agents = await provisioner.listAgents(profile.org_id, {
         activeOnly: activeOnly !== 'false',

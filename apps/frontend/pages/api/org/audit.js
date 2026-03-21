@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
-  const { createAuditLogger } = require('../../../../shared/security/audit-logger');
+  const { createAuditLogger } = require('../../../shared/security/audit-logger');
   const logger = createAuditLogger(db, profile.org_id);
 
   const { agentId, userId, action, resource, from, to, limit } = req.query;

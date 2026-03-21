@@ -38,7 +38,7 @@ export default async function handler(req, res) {
   const db = getServiceClient();
   if (!db) return res.status(500).json({ error: 'Database not configured' });
 
-  const { createConsentManager, CONSENT_TYPES } = require('../../../../shared/security/consent-manager');
+  const { createConsentManager, CONSENT_TYPES } = require('../../../shared/security/consent-manager');
   const consent = createConsentManager(db);
 
   // --- GET: Current consent status ---
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
       // Log the change
       try {
-        const { createAuditLogger } = require('../../../../shared/security/audit-logger');
+        const { createAuditLogger } = require('../../../shared/security/audit-logger');
         const { data: profile } = await db
           .from('profiles')
           .select('org_id')

@@ -49,14 +49,14 @@ export default async function handler(req, res) {
 
   // --- GET: My agents ---
   if (req.method === 'GET') {
-    const { createAgentProvisioner } = require('../../../../shared/agents/provisioner');
+    const { createAgentProvisioner } = require('../../../shared/agents/provisioner');
     const provisioner = createAgentProvisioner(db, vpsAdminUrl, vpsAdminToken);
 
     try {
       const agents = await provisioner.getAgents(profile.org_id, user.id);
 
       // Also get consent status
-      const { createConsentManager } = require('../../../../shared/security/consent-manager');
+      const { createConsentManager } = require('../../../shared/security/consent-manager');
       const consent = createConsentManager(db);
       const consents = await consent.getConsentStatus(user.id);
 
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 
     if (action === 'pause') {
       // Temporarily revoke activity_tracking consent
-      const { createConsentManager } = require('../../../../shared/security/consent-manager');
+      const { createConsentManager } = require('../../../shared/security/consent-manager');
       const consent = createConsentManager(db);
 
       await consent.revokeConsent(user.id, 'activity_tracking');
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'resume') {
-      const { createConsentManager } = require('../../../../shared/security/consent-manager');
+      const { createConsentManager } = require('../../../shared/security/consent-manager');
       const consent = createConsentManager(db);
 
       await consent.grantConsent(user.id, 'activity_tracking', {
