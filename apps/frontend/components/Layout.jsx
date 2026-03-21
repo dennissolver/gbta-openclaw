@@ -103,23 +103,48 @@ export default function Layout({ children }) {
       {/* Footer */}
       <footer className="border-t border-dark-800 py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-dark-400">
-            <div>
-              EasyOpenClaw by <span className="text-white">Corporate AI Solutions</span>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-dark-400">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-brand-500 rounded flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
+                </div>
+                <span>
+                  EasyOpenClaw — Built by{' '}
+                  <span className="text-white font-medium">Corporate AI Solutions</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                <a href="https://www.corporateaisolutions.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  corporateaisolutions.com
+                </a>
+                <span className="hidden sm:inline opacity-30">|</span>
+                <a href="https://www.calendly.com/mcmdennis" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Book a Call
+                </a>
+                <span className="hidden sm:inline opacity-30">|</span>
+                <a href="tel:+61402612471" className="hover:text-white transition-colors">
+                  +61 402 612 471
+                </a>
+                <span className="hidden sm:inline opacity-30">|</span>
+                <a href="mailto:dennis@corporateaisolutions.com" className="hover:text-white transition-colors">
+                  dennis@corporateaisolutions.com
+                </a>
+              </div>
             </div>
-            <div className="flex gap-6">
-              <Link href="/references" className="hover:text-white transition-colors">
-                References
-              </Link>
-              <Link href="/enterprise" className="hover:text-white transition-colors">
-                Enterprise
-              </Link>
-              <a href="https://www.corporateaisolutions.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                Corporate AI Solutions
-              </a>
-              <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                OpenClaw Project
-              </a>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-dark-400 opacity-70">
+              <div>&copy; {new Date().getFullYear()} Corporate AI Solutions. All rights reserved.</div>
+              <div className="flex gap-4">
+                <Link href="/references" className="hover:text-white transition-colors">
+                  References
+                </Link>
+                <Link href="/enterprise" className="hover:text-white transition-colors">
+                  Enterprise
+                </Link>
+                <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  OpenClaw Project
+                </a>
+              </div>
             </div>
           </div>
         </div>
