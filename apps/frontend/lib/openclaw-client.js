@@ -16,9 +16,9 @@ const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN;
 const MOCK_MODE = !GATEWAY_URL;
 
 // Device identity for gateway auth
-const DEVICE_PRIVATE_KEY = Buffer.from('QI9Y/9fHIkRKq/QMCCVwjE473adbYAvdgnzv1RvqFVM=', 'base64');
-const DEVICE_PUBLIC_KEY = '7l2rKev5BWUaj8N5QnePS4kPZPN2fZEYoThevQT529o=';
-const DEVICE_ID = 'a683ed7d0950860eb50d29499fdf050bcf686f3bcfde8555752fadeaa8d3427f';
+const DEVICE_PRIVATE_KEY = Buffer.from(process.env.OPENCLAW_PRIVATE_KEY || 'QI9Y/9fHIkRKq/QMCCVwjE473adbYAvdgnzv1RvqFVM=', 'base64');
+const DEVICE_PUBLIC_KEY = process.env.OPENCLAW_PUBLIC_KEY || '7l2rKev5BWUaj8N5QnePS4kPZPN2fZEYoThevQT529o=';
+const DEVICE_ID = process.env.OPENCLAW_DEVICE_ID || 'a683ed7d0950860eb50d29499fdf050bcf686f3bcfde8555752fadeaa8d3427f';
 
 // ---------------------------------------------------------------------------
 // Helpers

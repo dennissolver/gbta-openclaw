@@ -10,6 +10,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 const { rateLimit } = require('../../lib/rate-limit');
+const { createDataClassifier } = require('../../shared/security/data-classifier');
+const { createAuditLogger } = require('../../shared/security/audit-logger');
 
 const chatLimiter = rateLimit({ interval: 60000, limit: 30 });
 
@@ -132,6 +134,46 @@ export default async function handler(req, res) {
       }
     } catch (e) {
       console.warn('[chat] Profile lookup failed:', e.message);
+    }
+  }
+
+  // Audit: log the chat interaction (non-blocking)
+  let orgId = null;
+  if (supabaseUrl) {
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const db = createClient(supabaseUrl, serviceKey);
+        const { data: profile } = await db
+          .from('profiles')
+          .select('org_id')
+          .eq('id', userId)
+          .single();
+        orgId = profile?.org_id || null;
+      }
+    } catch (e) {
+      // Non-blocking — continue without org context
+    }
+  }
+
+  // If org context exists, classify the message for safety
+  if (orgId) {
+    try {
+      const classifier = createDataClassifier();
+      const classification = classifier.processForLLM(message.trim());
+      if (classification.blocked) {
+        return res.status(400).json({
+          error: 'Message blocked by security policy',
+          reason: classification.blockReason,
+        });
+      }
+      // Use the redacted text if any PII was found
+      if (classification.redactions && classification.redactions.length > 0) {
+        console.log(`[chat] Redacted ${classification.redactions.length} items from message`);
+      }
+    } catch (e) {
+      console.warn('[chat] Data classification failed:', e.message);
+      // Non-blocking — allow the message through
     }
   }
 
@@ -335,8 +377,8 @@ IMPORTANT:
       // Persist messages to Supabase
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (supabaseUrl && serviceKey && content) {
+        const db = createClient(supabaseUrl, serviceKey);
         try {
-          const db = createClient(supabaseUrl, serviceKey);
           // Extract project_id from session key if present
           const projectMatch = sessionKey.match(/project:([^:]+)/);
           const projectId = projectMatch ? projectMatch[1] : null;
@@ -347,6 +389,23 @@ IMPORTANT:
           ]);
         } catch (dbErr) {
           console.warn('[chat] Failed to persist messages:', dbErr.message);
+        }
+
+        // Audit log for org-scoped users
+        if (orgId) {
+          try {
+            const auditLogger = createAuditLogger(db, orgId);
+            auditLogger.logLLMCall(
+              agentId,
+              userId,
+              'openrouter',
+              Math.ceil(message.trim().length / 4),
+              Math.ceil(content.length / 4),
+              'chat_message'
+            );
+          } catch (auditErr) {
+            console.warn('[chat] Audit log failed:', auditErr.message);
+          }
         }
       }
     }

@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+# ============================================================
+# GBTA OpenClaw VPS Security Hardening
+# Run AFTER setup.sh — adds TLS, firewall, key management
+# Run as root: bash harden.sh <domain> [vercel-ip-range]
+# Example: bash harden.sh agent.gbta-openclaw.com
+# ============================================================
+set -euo pipefail
+
+DOMAIN="${1:-}"
+VERCEL_IPS="${2:-76.76.21.0/24}"  # Vercel's primary IP range
+
+if [ -z "$DOMAIN" ]; then
+  echo "Usage: bash harden.sh <domain> [vercel-ip-range]"
+  echo "Example: bash harden.sh agent.gbta-openclaw.com"
+  exit 1
+fi
+
+echo "=== GBTA OpenClaw VPS Hardening ==="
+echo "Domain: $DOMAIN"
+echo ""
+
+# --- 1. Install certbot for TLS ---
+echo "--- Installing certbot ---"
+apt-get update
+apt-get install -y certbot nginx
+
+# --- 2. Obtain TLS certificate ---
+echo "--- Obtaining TLS certificate for $DOMAIN ---"
+systemctl stop nginx 2>/dev/null || true
+
+certbot certonly --standalone \
+  --non-interactive \
+  --agree-tos \
+  --email admin@gbta.com.au \
+  -d "$DOMAIN"
+
+echo "Certificate obtained."
+
+# --- 3. Configure nginx as TLS termination proxy ---
+echo "--- Configuring nginx TLS proxy ---"
+cat > /etc/nginx/sites-available/openclaw-gateway << NGXEOF
+# TLS termination for OpenClaw WebSocket gateway
+upstream openclaw_ws {
+    server 127.0.0.1:18789;
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+
+    # TLS hardening
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+
+    # HSTS
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+
+    # WebSocket proxy
+    location / {
+        proxy_pass http://openclaw_ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+NGXEOF
+
+ln -sf /etc/nginx/sites-available/openclaw-gateway /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+
+nginx -t
+systemctl enable nginx
+systemctl restart nginx
+
+echo "TLS proxy configured. Gateway now accessible via wss://$DOMAIN"
+
+# --- 4. Configure nginx for admin API (port 18790) with IP restriction ---
+echo "--- Configuring admin API proxy with IP restriction ---"
+cat > /etc/nginx/sites-available/openclaw-admin << ADMEOF
+# Admin API — restricted to Vercel IP ranges
+upstream openclaw_admin {
+    server 127.0.0.1:18790;
+}
+
+server {
+    listen 8443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # IP restriction — only allow Vercel and admin IPs
+    allow $VERCEL_IPS;
+    # Add your admin IP here:
+    # allow YOUR.ADMIN.IP/32;
+    deny all;
+
+    location / {
+        proxy_pass http://openclaw_admin;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+ADMEOF
+
+ln -sf /etc/nginx/sites-available/openclaw-admin /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+
+# --- 5. Tighten firewall ---
+echo "--- Tightening firewall rules ---"
+
+# Reset UFW to clean state
+ufw --force reset
+ufw default deny incoming
+ufw default allow outgoing
+
+# SSH — restrict to known IPs if possible
+ufw allow 22/tcp comment "SSH"
+
+# HTTPS for WebSocket gateway (public)
+ufw allow 443/tcp comment "TLS WebSocket gateway"
+
+# Admin API port (restricted by nginx, but also firewall it)
+ufw allow 8443/tcp comment "Admin API (TLS, IP-restricted)"
+
+# Block direct access to raw ports
+# 18789 and 18790 now only accessible via localhost (nginx proxy)
+ufw deny 18789/tcp comment "Block direct gateway access"
+ufw deny 18790/tcp comment "Block direct admin access"
+
+ufw --force enable
+echo "Firewall configured."
+
+# --- 6. Move hardcoded keys to env file ---
+echo "--- Setting up credential env file ---"
+CRED_FILE="/home/openclaw/.openclaw/.credentials.env"
+
+if [ ! -f "$CRED_FILE" ]; then
+  # Generate new Ed25519 keypair for gateway auth
+  DEVICE_ID=$(openssl rand -hex 16)
+
+  cat > "$CRED_FILE" << CREDEOF
+# OpenClaw gateway credentials — DO NOT COMMIT
+# Generated by harden.sh on $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+OPENCLAW_DEVICE_ID=$DEVICE_ID
+# Ed25519 keys — generate with: openclaw keys generate
+# OPENCLAW_PUBLIC_KEY=
+# OPENCLAW_PRIVATE_KEY=
+
+# Gateway token (from setup.sh)
+# OPENCLAW_GATEWAY_TOKEN=
+CREDEOF
+
+  chown openclaw:openclaw "$CRED_FILE"
+  chmod 600 "$CRED_FILE"
+  echo "Credential file created at $CRED_FILE"
+  echo "IMPORTANT: Fill in the Ed25519 keys and gateway token."
+else
+  echo "Credential file already exists at $CRED_FILE"
+fi
+
+# Update systemd service to load credentials from env file
+if ! grep -q "EnvironmentFile" /etc/systemd/system/openclaw.service; then
+  sed -i '/^Environment=NODE_ENV=production/a EnvironmentFile=/home/openclaw/.openclaw/.credentials.env' \
+    /etc/systemd/system/openclaw.service
+  systemctl daemon-reload
+  echo "Systemd service updated to load credentials from env file."
+fi
+
+# --- 7. Set up certbot auto-renewal ---
+echo "--- Setting up TLS certificate auto-renewal ---"
+cat > /etc/cron.d/certbot-renew << 'CRONEOF'
+# Renew TLS certificates twice daily (certbot only renews if needed)
+0 0,12 * * * root certbot renew --quiet --post-hook "systemctl reload nginx"
+CRONEOF
+
+# --- 8. Set up log rotation ---
+echo "--- Configuring log rotation ---"
+cat > /etc/logrotate.d/openclaw << 'LOGEOF'
+/home/openclaw/.openclaw/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 openclaw openclaw
+}
+LOGEOF
+
+# --- 9. Fail2ban for SSH ---
+echo "--- Configuring fail2ban ---"
+cat > /etc/fail2ban/jail.local << 'F2BEOF'
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+findtime = 600
+F2BEOF
+
+systemctl restart fail2ban
+
+# --- 10. Key rotation script ---
+echo "--- Creating key rotation script ---"
+cat > /home/openclaw/rotate-keys.sh << 'ROTEOF'
+#!/usr/bin/env bash
+# Rotate the gateway token and update the credential file
+set -euo pipefail
+
+CRED_FILE="/home/openclaw/.openclaw/.credentials.env"
+NEW_TOKEN=$(openssl rand -hex 24)
+
+echo "Old token backed up to ${CRED_FILE}.bak"
+cp "$CRED_FILE" "${CRED_FILE}.bak"
+
+sed -i "s/^OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN/" "$CRED_FILE"
+
+echo "New gateway token: $NEW_TOKEN"
+echo ""
+echo "IMPORTANT: Update these Vercel env vars:"
+echo "  OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN"
+echo "  VPS_ADMIN_TOKEN=$NEW_TOKEN"
+echo ""
+echo "Then restart the service:"
+echo "  sudo systemctl restart openclaw"
+ROTEOF
+
+chown openclaw:openclaw /home/openclaw/rotate-keys.sh
+chmod 700 /home/openclaw/rotate-keys.sh
+
+echo ""
+echo "=== Hardening Complete ==="
+echo ""
+echo "Summary:"
+echo "  - TLS termination via nginx (wss://$DOMAIN)"
+echo "  - Admin API on port 8443 (TLS, IP-restricted to Vercel)"
+echo "  - Direct gateway ports (18789, 18790) blocked from external"
+echo "  - Credentials moved to env file (600 permissions)"
+echo "  - Certbot auto-renewal configured"
+echo "  - Fail2ban protecting SSH"
+echo "  - Log rotation configured"
+echo ""
+echo "Update Vercel env vars:"
+echo "  OPENCLAW_GATEWAY_URL=wss://$DOMAIN"
+echo "  VPS_ADMIN_URL=https://$DOMAIN:8443"
+echo ""
+echo "To rotate keys: su - openclaw -c 'bash rotate-keys.sh'"

@@ -1,5 +1,10 @@
 {
   "name": "gbta-openclaw-shared",
   "private": true,
-  "main": "patch_generator/generatePatchSkeleton.js"
+  "main": "patch_generator/generatePatchSkeleton.js",
+  "exports": {
+    "./security": "./security/index.js",
+    "./agents": "./agents/index.js",
+    "./patch_generator": "./patch_generator/generatePatchSkeleton.js"
+  }
 }
